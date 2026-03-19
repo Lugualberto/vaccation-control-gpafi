@@ -1,4 +1,5 @@
 import axios from "axios";
+import { AUTH_STORAGE_KEY } from "../constants/auth";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api",
@@ -6,6 +7,34 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+api.interceptors.request.use((config) => {
+  const rawAuth = localStorage.getItem(AUTH_STORAGE_KEY);
+  if (!rawAuth) {
+    return config;
+  }
+
+  try {
+    const parsed = JSON.parse(rawAuth);
+    if (parsed?.token) {
+      config.headers.Authorization = `Bearer ${parsed.token}`;
+    }
+  } catch {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  }
+
+  return config;
+});
+
+export async function login(email, password) {
+  const { data } = await api.post("/auth/login", { email, password });
+  return data;
+}
+
+export async function getCurrentUser() {
+  const { data } = await api.get("/auth/me");
+  return data;
+}
 
 export async function getEmployees() {
   const { data } = await api.get("/employees");
@@ -39,23 +68,18 @@ export async function listVacations(filters = {}) {
   return data;
 }
 
+export async function listVacationAuditLogs(filters = {}) {
+  const { data } = await api.get("/vacations/audit", { params: filters });
+  return data;
+}
+
 export async function createVacation(payload) {
   const { data } = await api.post("/vacations", payload);
   return data;
 }
 
-export async function approveVacation(vacationId, approverId) {
-  const { data } = await api.put(`/vacations/${vacationId}/approve`, {
-    approver_id: approverId,
-  });
-  return data;
-}
-
-export async function rejectVacation(vacationId, approverId, rejectionReason) {
-  const { data } = await api.put(`/vacations/${vacationId}/reject`, {
-    approver_id: approverId,
-    rejection_reason: rejectionReason,
-  });
+export async function removeVacation(vacationId) {
+  const { data } = await api.delete(`/vacations/${vacationId}`);
   return data;
 }
 

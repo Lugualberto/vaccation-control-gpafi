@@ -1,19 +1,18 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getEmployees } from "../api/client";
 import { useAuth } from "../contexts/useAuth";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login, user } = useAuth();
-  const [employees, setEmployees] = useState([]);
-  const [selectedId, setSelectedId] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (user) {
-      if (user.ROLE === "ADMIN") {
+      if ((user.role || user.ROLE) === "ADMIN") {
         navigate("/admin", { replace: true });
       } else {
         navigate("/employee", { replace: true });
@@ -21,68 +20,55 @@ export default function LoginPage() {
     }
   }, [navigate, user]);
 
-  useEffect(() => {
-    async function loadEmployees() {
-      setLoading(true);
-      setError("");
-      try {
-        const response = await getEmployees();
-        setEmployees(response);
-        if (response.length) {
-          setSelectedId(String(response[0].ID || response[0].id));
-        }
-      } catch {
-        setError("Não foi possível carregar usuários. Verifique o backend.");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadEmployees();
-  }, []);
-
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    const selectedUser = employees.find(
-      (employee) => String(employee.ID || employee.id) === selectedId
-    );
-    if (!selectedUser) {
-      return;
-    }
+    setLoading(true);
+    setError("");
 
-    login(selectedUser);
-    if (selectedUser.ROLE === "ADMIN") {
-      navigate("/admin");
-      return;
+    try {
+      const loggedUser = await login({ email, password });
+      if ((loggedUser.role || loggedUser.ROLE) === "ADMIN") {
+        navigate("/admin");
+        return;
+      }
+      navigate("/employee");
+    } catch (requestError) {
+      const apiMessage = requestError?.response?.data?.message;
+      setError(apiMessage || "Nao foi possivel autenticar com as credenciais informadas.");
+    } finally {
+      setLoading(false);
     }
-    navigate("/employee");
   };
 
   return (
     <section className="card login-card">
-      <h2>Login (demo)</h2>
-      <p>Para teste, selecione o usuário e entre no sistema.</p>
-      {loading ? <p>Carregando usuários...</p> : null}
+      <h2>Login</h2>
+      <p>Autentique-se com e-mail corporativo e senha.</p>
+      <p className="hint-text">Usuario seed: luana.gualberto@nubank.com.br / Nubank@123</p>
       {error ? <p className="error-text">{error}</p> : null}
-      {!loading ? (
-        <form onSubmit={handleSubmit}>
-          <label htmlFor="user">Usuário</label>
-          <select
-            id="user"
-            value={selectedId}
-            onChange={(event) => setSelectedId(event.target.value)}
-          >
-            {employees.map((employee) => (
-              <option key={employee.ID || employee.id} value={employee.ID || employee.id}>
-                {(employee.NAME || employee.name) + " - " + (employee.EMAIL || employee.email)}
-              </option>
-            ))}
-          </select>
-          <button type="submit" disabled={!selectedId}>
-            Entrar
-          </button>
-        </form>
-      ) : null}
+      <form onSubmit={handleSubmit}>
+        <label htmlFor="email">E-mail</label>
+        <input
+          id="email"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="nome.sobrenome@empresa.com"
+          required
+        />
+        <label htmlFor="password">Senha</label>
+        <input
+          id="password"
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="********"
+          required
+        />
+        <button type="submit" disabled={loading}>
+          {loading ? "Entrando..." : "Entrar"}
+        </button>
+      </form>
     </section>
   );
 }

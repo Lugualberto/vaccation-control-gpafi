@@ -34,8 +34,10 @@ Projeto full-stack com:
 
 1. O período de férias deve começar e terminar no **mesmo ano**.
 2. O cálculo de dias está em **dias úteis** (segunda a sexta).
-3. Apenas usuários com `ROLE = 'ADMIN'` podem aprovar/reprovar solicitações.
-4. Administrador pode ajustar saldo anual por colaborador (`PUT /api/employees/:id/balance/:year`).
+3. Autenticação é feita por JWT com perfis `ADMIN` e `EMPLOYEE`.
+4. Não existe aprovação de gestor: o próprio funcionário programa/remover suas férias.
+5. Administrador pode ajustar saldo anual por colaborador (`PUT /api/employees/:id/balance/:year`).
+6. Inclusões/remocoes de calendário ficam registradas em auditoria.
 
 ## Como rodar
 

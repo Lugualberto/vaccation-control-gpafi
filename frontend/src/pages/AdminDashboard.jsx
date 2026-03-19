@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  approveVacation,
   getEmployeeBalance,
   getEmployees,
+  listVacationAuditLogs,
   listVacations,
-  rejectVacation,
   updateEmployeeBalance,
 } from "../api/client";
-import PendingRequestsTable from "../components/PendingRequestsTable";
 import { useAuth } from "../contexts/useAuth";
 import { Calendar, formats, localizer, toCalendarEvent } from "../utils/calendar";
 
@@ -26,13 +24,13 @@ export default function AdminDashboard() {
   const { user } = useAuth();
   const currentYear = new Date().getFullYear();
   const [employees, setEmployees] = useState([]);
-  const [pendingRequests, setPendingRequests] = useState([]);
   const [approvedVacations, setApprovedVacations] = useState([]);
-  const [loadingPending, setLoadingPending] = useState(false);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [loadingCalendar, setLoadingCalendar] = useState(false);
   const [error, setError] = useState("");
   const [balanceMessage, setBalanceMessage] = useState("");
   const [savingBalance, setSavingBalance] = useState(false);
-  const [filters, setFilters] = useState({
+  const [calendarFilters, setCalendarFilters] = useState({
     employeeId: "",
     from: "",
     to: "",
@@ -55,30 +53,34 @@ export default function AdminDashboard() {
     return result;
   }, []);
 
-  const loadPending = useCallback(async (activeFilters = {}) => {
-    setLoadingPending(true);
+  const loadApprovedCalendar = useCallback(async (activeFilters = {}) => {
+    setLoadingCalendar(true);
     setError("");
     try {
       const data = await listVacations({
-        status: "PENDING",
+        status: "APPROVED",
         employeeId: activeFilters.employeeId || undefined,
         from: activeFilters.from || undefined,
         to: activeFilters.to || undefined,
       });
-      setPendingRequests(data);
+      setApprovedVacations(data);
     } catch {
-      setError("Erro ao carregar solicitações pendentes.");
+      setError("Erro ao carregar calendario da equipe.");
     } finally {
-      setLoadingPending(false);
+      setLoadingCalendar(false);
     }
   }, []);
 
-  const loadApprovedCalendar = useCallback(async () => {
+  const loadAuditLogs = useCallback(async (activeFilters = {}) => {
     try {
-      const data = await listVacations({ status: "APPROVED" });
-      setApprovedVacations(data);
+      const data = await listVacationAuditLogs({
+        employeeId: activeFilters.employeeId || undefined,
+        from: activeFilters.from || undefined,
+        to: activeFilters.to || undefined,
+      });
+      setAuditLogs(data);
     } catch {
-      setError("Erro ao carregar calendário da equipe.");
+      setError("Erro ao carregar auditoria de calendario.");
     }
   }, []);
 
@@ -103,7 +105,7 @@ export default function AdminDashboard() {
           usedDays: "0",
         }));
         setBalanceMessage(
-          "Saldo não encontrado para esse ano. Você pode salvar para criar um novo saldo."
+          "Saldo nao encontrado para esse ano. Voce pode salvar para criar um novo saldo."
         );
         return;
       }
@@ -112,8 +114,8 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    Promise.all([loadEmployees(), loadPending(), loadApprovedCalendar()]);
-  }, [loadEmployees, loadPending, loadApprovedCalendar]);
+    Promise.all([loadEmployees(), loadApprovedCalendar(), loadAuditLogs()]);
+  }, [loadEmployees, loadApprovedCalendar, loadAuditLogs]);
 
   useEffect(() => {
     if (!employees.length) {
@@ -134,30 +136,12 @@ export default function AdminDashboard() {
     loadBalanceSnapshot(balanceForm.employeeId, balanceForm.year);
   }, [balanceForm.employeeId, balanceForm.year, loadBalanceSnapshot]);
 
-  const handleApplyFilters = async (event) => {
+  const handleApplyCalendarFilters = async (event) => {
     event.preventDefault();
-    await loadPending(filters);
-  };
-
-  const handleApprove = async (request) => {
-    try {
-      await approveVacation(request.ID || request.id, user.ID || user.id);
-      await Promise.all([loadPending(filters), loadApprovedCalendar()]);
-    } catch (requestError) {
-      const apiMessage = requestError?.response?.data?.message;
-      setError(apiMessage || "Falha ao aprovar solicitação.");
-    }
-  };
-
-  const handleReject = async (request) => {
-    const reason = window.prompt("Motivo da reprovação (opcional):", "");
-    try {
-      await rejectVacation(request.ID || request.id, user.ID || user.id, reason || "");
-      await Promise.all([loadPending(filters), loadApprovedCalendar()]);
-    } catch (requestError) {
-      const apiMessage = requestError?.response?.data?.message;
-      setError(apiMessage || "Falha ao reprovar solicitação.");
-    }
+    await Promise.all([
+      loadApprovedCalendar(calendarFilters),
+      loadAuditLogs(calendarFilters),
+    ]);
   };
 
   const handleAdjustBalance = async (event) => {
@@ -168,7 +152,6 @@ export default function AdminDashboard() {
 
     try {
       const updated = await updateEmployeeBalance(balanceForm.employeeId, balanceForm.year, {
-        admin_id: user.ID || user.id,
         total_days: Number(balanceForm.totalDays),
         used_days: Number(balanceForm.usedDays),
       });
@@ -179,9 +162,7 @@ export default function AdminDashboard() {
         usedDays: String(updated.USED_DAYS || updated.used_days),
       }));
       setBalanceMessage(
-        `Saldo atualizado com sucesso. Disponível: ${
-          updated.REMAINING_DAYS || updated.remaining_days
-        } dias.`
+        `Saldo atualizado. Disponivel: ${updated.REMAINING_DAYS || updated.remaining_days} dias.`
       );
     } catch (requestError) {
       const apiMessage = requestError?.response?.data?.message;
@@ -195,7 +176,8 @@ export default function AdminDashboard() {
     <section className="dashboard-grid">
       <div className="card">
         <h2>Dashboard do Administrador</h2>
-        <p>Aprove ou reprove solicitações e acompanhe o calendário do time.</p>
+        <p>Visualize o calendario da equipe, auditoria e ajuste saldos anuais.</p>
+        <p className="hint-text">Sessao: {user?.email || user?.EMAIL}</p>
         {error ? <p className="error-text">{error}</p> : null}
       </div>
 
@@ -273,14 +255,14 @@ export default function AdminDashboard() {
       </div>
 
       <div className="card">
-        <h3>Filtros de solicitações pendentes</h3>
-        <form className="filters" onSubmit={handleApplyFilters}>
+        <h3>Filtros do calendario e auditoria</h3>
+        <form className="filters" onSubmit={handleApplyCalendarFilters}>
           <label>
             Colaborador
             <select
-              value={filters.employeeId}
+              value={calendarFilters.employeeId}
               onChange={(event) =>
-                setFilters((prev) => ({ ...prev, employeeId: event.target.value }))
+                setCalendarFilters((prev) => ({ ...prev, employeeId: event.target.value }))
               }
             >
               <option value="">Todos</option>
@@ -295,35 +277,30 @@ export default function AdminDashboard() {
             De
             <input
               type="date"
-              value={filters.from}
+              value={calendarFilters.from}
               onChange={(event) =>
-                setFilters((prev) => ({ ...prev, from: event.target.value }))
+                setCalendarFilters((prev) => ({ ...prev, from: event.target.value }))
               }
             />
           </label>
           <label>
-            Até
+            Ate
             <input
               type="date"
-              value={filters.to}
+              value={calendarFilters.to}
               onChange={(event) =>
-                setFilters((prev) => ({ ...prev, to: event.target.value }))
+                setCalendarFilters((prev) => ({ ...prev, to: event.target.value }))
               }
             />
           </label>
-          <button type="submit">Aplicar filtros</button>
+          <button type="submit" disabled={loadingCalendar}>
+            {loadingCalendar ? "Aplicando..." : "Aplicar filtros"}
+          </button>
         </form>
-
-        <PendingRequestsTable
-          requests={pendingRequests}
-          loading={loadingPending}
-          onApprove={handleApprove}
-          onReject={handleReject}
-        />
       </div>
 
       <div className="card calendar-card">
-        <h3>Calendário da equipe (férias aprovadas)</h3>
+        <h3>Calendario da equipe (ferias programadas)</h3>
         <Calendar
           localizer={localizer}
           culture="pt-BR"
@@ -334,6 +311,35 @@ export default function AdminDashboard() {
           formats={formats}
           eventPropGetter={eventStyleGetter}
         />
+      </div>
+
+      <div className="card">
+        <h3>Auditoria de inclusoes/remocoes</h3>
+        {!auditLogs.length ? <p>Nenhum evento encontrado para os filtros atuais.</p> : null}
+        {!!auditLogs.length ? (
+          <table className="requests-table">
+            <thead>
+              <tr>
+                <th>Data/Hora</th>
+                <th>Colaborador</th>
+                <th>Acao</th>
+                <th>Executado por</th>
+                <th>Detalhes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {auditLogs.map((log) => (
+                <tr key={log.ID || log.id}>
+                  <td>{new Date(log.ACTION_AT || log.action_at).toLocaleString("pt-BR")}</td>
+                  <td>{log.EMPLOYEE_NAME || log.employee_name}</td>
+                  <td>{log.ACTION || log.action}</td>
+                  <td>{log.ACTOR_NAME || log.actor_name}</td>
+                  <td>{log.DETAILS || log.details || "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : null}
       </div>
     </section>
   );

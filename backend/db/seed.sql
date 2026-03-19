@@ -1,5 +1,6 @@
 -- ============================================================================
 -- Seed inicial para testes locais
+-- Senha padrao para todos os usuarios: Nubank@123
 -- ============================================================================
 
 INSERT INTO employee (name, email, chapter, squad, hire_date, role)
@@ -12,7 +13,6 @@ VALUES (
   'ADMIN'
 );
 
--- Exemplo de colaborador adicional (opcional para demo do calendario da equipe)
 INSERT INTO employee (name, email, chapter, squad, hire_date, manager_id, role)
 SELECT
   'Rafael Oliveira',
@@ -24,6 +24,19 @@ SELECT
   'EMPLOYEE'
 FROM employee e
 WHERE e.email = 'luana.gualberto@nubank.com.br';
+
+INSERT INTO app_user (employee_id, email, password_hash, role, is_active)
+SELECT
+  id,
+  email,
+  '$2b$10$omKHiQyBmCqhjV9f02kyq.svgMWbl8F0Wo0bTRDudlLbM7urLyHDG',
+  role,
+  1
+FROM employee
+WHERE email IN (
+  'luana.gualberto@nubank.com.br',
+  'rafael.oliveira@nubank.com.br'
+);
 
 INSERT INTO vacation_balance (employee_id, year, total_days, used_days)
 SELECT id, EXTRACT(YEAR FROM SYSDATE), 30, 5

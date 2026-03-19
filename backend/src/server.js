@@ -8,6 +8,10 @@ const port = Number(process.env.PORT || 3000);
 
 async function start() {
   try {
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET nao configurado. Defina essa variavel no arquivo .env.");
+    }
+
     await initOraclePool();
 
     const server = app.listen(port, () => {

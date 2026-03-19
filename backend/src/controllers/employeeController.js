@@ -2,7 +2,21 @@ const { getConnection } = require("../config/db");
 const { AppError } = require("../utils/errors");
 const { adjustEmployeeBalance } = require("../services/employeeService");
 
+function ensureEmployeeScopeAccess(requester, employeeId) {
+  if (requester.role === "ADMIN") {
+    return;
+  }
+
+  if (Number(requester.employeeId) !== Number(employeeId)) {
+    throw new AppError("Sem permissao para acessar dados de outro colaborador.", 403);
+  }
+}
+
 async function listEmployees(req, res) {
+  if (req.user.role !== "ADMIN") {
+    throw new AppError("Apenas administradores podem listar colaboradores.", 403);
+  }
+
   const connection = await getConnection();
 
   try {
@@ -20,6 +34,7 @@ async function listEmployees(req, res) {
 
 async function getEmployeeById(req, res) {
   const { id } = req.params;
+  ensureEmployeeScopeAccess(req.user, Number(id));
   const connection = await getConnection();
 
   try {
@@ -42,6 +57,7 @@ async function getEmployeeById(req, res) {
 
 async function getEmployeeBalance(req, res) {
   const { id, year } = req.params;
+  ensureEmployeeScopeAccess(req.user, Number(id));
   const connection = await getConnection();
 
   try {
@@ -69,6 +85,7 @@ async function getEmployeeBalance(req, res) {
 async function getEmployeeVacations(req, res) {
   const { id } = req.params;
   const { status } = req.query;
+  ensureEmployeeScopeAccess(req.user, Number(id));
   const connection = await getConnection();
 
   try {
@@ -89,8 +106,6 @@ async function getEmployeeVacations(req, res) {
               vr.requested_days,
               vr.status,
               vr.justification,
-              vr.rejection_reason,
-              vr.approver_id,
               vr.created_at,
               vr.updated_at
          FROM vacation_request vr
@@ -108,6 +123,10 @@ async function getEmployeeVacations(req, res) {
 
 async function updateEmployeeBalance(req, res) {
   const { id, year } = req.params;
+  if (req.user.role !== "ADMIN") {
+    throw new AppError("Apenas administradores podem ajustar saldos.", 403);
+  }
+
   const updated = await adjustEmployeeBalance(id, year, req.body);
   res.json(updated);
 }

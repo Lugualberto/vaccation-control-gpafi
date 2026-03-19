@@ -17,11 +17,7 @@ async function ensureEmployeeExists(connection, employeeId) {
 }
 
 async function adjustEmployeeBalance(employeeId, year, payload) {
-  const { admin_id: adminId, total_days: totalDays, used_days: usedDays } = payload;
-
-  if (!adminId) {
-    throw new AppError("Campo obrigatorio: admin_id.", 400);
-  }
+  const { total_days: totalDays, used_days: usedDays } = payload;
 
   if (totalDays === undefined && usedDays === undefined) {
     throw new AppError("Informe total_days, used_days ou ambos para ajuste.", 400);
@@ -35,11 +31,6 @@ async function adjustEmployeeBalance(employeeId, year, payload) {
   const connection = await getConnection();
 
   try {
-    const admin = await ensureEmployeeExists(connection, Number(adminId));
-    if (admin.ROLE !== "ADMIN") {
-      throw new AppError("Apenas administradores podem ajustar saldos.", 403);
-    }
-
     await ensureEmployeeExists(connection, Number(employeeId));
 
     const balanceResult = await connection.execute(

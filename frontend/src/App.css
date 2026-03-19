@@ -93,6 +93,12 @@
   color: #b91c1c;
 }
 
+.hint-text {
+  margin-top: 8px;
+  color: #475569;
+  font-size: 0.88rem;
+}
+
 .filters {
   display: grid;
   grid-template-columns: repeat(4, minmax(140px, 1fr));

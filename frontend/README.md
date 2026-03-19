@@ -46,11 +46,12 @@ Integração principal:
 
 ## Funcionalidades da interface
 
-- login fake com selecao de usuario para demo
-- dashboard do colaborador com saldo e solicitacao via calendario
+- login real com e-mail/senha usando JWT
+- dashboard do colaborador com saldo, inclusao e remocao de periodos no calendario
 - dashboard admin com:
-  - filtros e aprovacao/reprovacao de pendencias
-  - calendario consolidado de periodos aprovados
+  - calendario consolidado de periodos programados
+  - filtro por colaborador e periodo
   - formulario para ajustar saldo anual de ferias
+  - tabela de auditoria (inclusao/remocao no calendario)
 
 Observacao: a contagem exibida no modal e no backend considera **dias uteis** (segunda a sexta).

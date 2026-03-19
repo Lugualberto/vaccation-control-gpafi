@@ -1,39 +1,34 @@
 const {
   createVacationRequest,
-  approveVacationRequest,
-  rejectVacationRequest,
+  removeVacationRequest,
   listVacations,
+  listVacationAuditLogs,
 } = require("../services/vacationService");
 
 async function createVacation(req, res) {
-  const created = await createVacationRequest(req.body);
+  const created = await createVacationRequest(req.body, req.user);
   res.status(201).json(created);
 }
 
-async function approveVacation(req, res) {
+async function removeVacation(req, res) {
   const { id } = req.params;
-  const { approver_id: approverId } = req.body;
-
-  await approveVacationRequest(id, approverId);
-  res.json({ message: "Solicitacao aprovada com sucesso." });
-}
-
-async function rejectVacation(req, res) {
-  const { id } = req.params;
-  const { approver_id: approverId, rejection_reason: rejectionReason } = req.body;
-
-  await rejectVacationRequest(id, approverId, rejectionReason);
-  res.json({ message: "Solicitacao reprovada com sucesso." });
+  await removeVacationRequest(id, req.user);
+  res.json({ message: "Ferias removidas do calendario com sucesso." });
 }
 
 async function getVacations(req, res) {
-  const vacations = await listVacations(req.query);
+  const vacations = await listVacations(req.query, req.user);
   res.json(vacations);
+}
+
+async function getVacationAuditLogs(req, res) {
+  const logs = await listVacationAuditLogs(req.query, req.user);
+  res.json(logs);
 }
 
 module.exports = {
   createVacation,
-  approveVacation,
-  rejectVacation,
+  removeVacation,
   getVacations,
+  getVacationAuditLogs,
 };

@@ -13,7 +13,7 @@ function ProtectedRoute({ children, requireAdmin = false }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (requireAdmin && user.ROLE !== "ADMIN") {
+  if (requireAdmin && (user.role || user.ROLE) !== "ADMIN") {
     return <Navigate to="/employee" replace />;
   }
 
@@ -23,7 +23,7 @@ function ProtectedRoute({ children, requireAdmin = false }) {
 function HomeRedirect() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (user.ROLE === "ADMIN") return <Navigate to="/admin" replace />;
+  if ((user.role || user.ROLE) === "ADMIN") return <Navigate to="/admin" replace />;
   return <Navigate to="/employee" replace />;
 }
 

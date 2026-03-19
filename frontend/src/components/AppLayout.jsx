@@ -9,10 +9,10 @@ export default function AppLayout() {
       <header className="app-header">
         <div>
           <h1>Controle de Férias da Equipe</h1>
-          {user ? <p>Usuário: {user.NAME || user.name}</p> : null}
+          {user ? <p>Usuário: {user.name || user.NAME}</p> : null}
         </div>
         <nav className="app-nav">
-          {user?.ROLE === "ADMIN" ? <Link to="/admin">Painel Admin</Link> : null}
+          {(user?.role || user?.ROLE) === "ADMIN" ? <Link to="/admin">Painel Admin</Link> : null}
           {user ? <Link to="/employee">Meu Painel</Link> : null}
           {user ? (
             <button type="button" onClick={logout}>

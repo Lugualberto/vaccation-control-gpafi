@@ -1,17 +1,17 @@
 const express = require("express");
 const {
   createVacation,
-  approveVacation,
-  rejectVacation,
+  removeVacation,
   getVacations,
+  getVacationAuditLogs,
 } = require("../controllers/vacationController");
 const { asyncHandler } = require("../utils/errors");
 
 const router = express.Router();
 
+router.get("/audit", asyncHandler(getVacationAuditLogs));
 router.get("/", asyncHandler(getVacations));
 router.post("/", asyncHandler(createVacation));
-router.put("/:id/approve", asyncHandler(approveVacation));
-router.put("/:id/reject", asyncHandler(rejectVacation));
+router.delete("/:id", asyncHandler(removeVacation));
 
 module.exports = router;
