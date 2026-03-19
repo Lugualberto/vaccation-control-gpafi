@@ -5,6 +5,7 @@ import {
   getEmployeeBalance,
   IS_SHARED_MOCK_MODE,
   IS_MOCK_MODE,
+  listBackupAssignments,
   listVacations,
   listVacationAuditLogs,
   removeVacation,
@@ -13,7 +14,6 @@ import {
 import CalendarControls from "../components/CalendarControls";
 import VacationRequestModal from "../components/VacationRequestModal";
 import YearCalendarView from "../components/YearCalendarView";
-import { getBackupInfoFromFullName } from "../constants/backups";
 import { useAuth } from "../contexts/useAuth";
 import { Calendar, formats, localizer, toCalendarEvent } from "../utils/calendar";
 
@@ -86,6 +86,10 @@ export default function EmployeeDashboard() {
   });
   const [savingBalance, setSavingBalance] = useState(false);
   const [balanceMessage, setBalanceMessage] = useState("");
+  const [backupInfo, setBackupInfo] = useState({
+    hasConfiguredBackup: false,
+    backupDisplayName: "new hire",
+  });
 
   const currentYear = new Date().getFullYear();
   const employeeId = Number(user?.employeeId);
@@ -96,21 +100,17 @@ export default function EmployeeDashboard() {
     }
     return events;
   }, [calendarScope, events, employeeId]);
-  const backupInfo = useMemo(
-    () => getBackupInfoFromFullName(user?.name || user?.NAME),
-    [user]
-  );
-
   const loadData = useCallback(async () => {
     if (!employeeId) return;
 
     setLoading(true);
     setError("");
     try {
-      const [balanceResult, vacationsResult, auditResult] = await Promise.all([
+      const [balanceResult, vacationsResult, auditResult, backupResult] = await Promise.all([
         getEmployeeBalance(employeeId, currentYear),
         listVacations({ status: "APPROVED" }),
         listVacationAuditLogs({ employeeId }),
+        listBackupAssignments(),
       ]);
       setBalance(balanceResult);
       setBalanceForm({
@@ -119,6 +119,12 @@ export default function EmployeeDashboard() {
       });
       setEventsData(vacationsResult);
       setAuditLogs(auditResult);
+      const ownBackup = backupResult?.[0];
+      setBackupInfo({
+        hasConfiguredBackup: Boolean(ownBackup),
+        backupFirstName: ownBackup?.backup_employee_name?.split(" ")?.[0]?.toLowerCase() || null,
+        backupDisplayName: ownBackup?.backup_employee_name || "new hire",
+      });
     } catch {
       setError("Failed to load dashboard. Check your local test data.");
     } finally {
@@ -228,15 +234,17 @@ export default function EmployeeDashboard() {
         <div className="hero-copy">
           <h2>Team Vacation and Day Off Control 🌴</h2>
           <p>
-            Here comes everyone&apos;s favorite time at work: vacation (finally). After so much
-            effort and delivery, nothing is fairer than a <strong>break</strong>.
+            Chegou um dos momentos favoritos do trabalho: planejar férias e day offs.
           </p>
-          <p>This is our internal vacation and day off control:</p>
+          <p>
+            Use este painel para combinar datas com o time, evitar conflitos com seu backup e
+            garantir que todo mundo consiga descansar sem deixar as entregas na mão.
+          </p>
           <ul>
-            <li>add the periods you plan to take as vacation;</li>
-            <li>avoid overlapping with your backup person&apos;s vacation;</li>
+            <li>informe os períodos que você planeja tirar;</li>
+            <li>acompanhe o calendário do time para evitar sobreposições;</li>
             <li>
-              this control is internal only: formal scheduling in Oracle is still required.
+              este controle é interno: o lançamento oficial continua no fluxo corporativo.
             </li>
           </ul>
         </div>

@@ -5,9 +5,12 @@ import {
   getEmployees,
   IS_SHARED_MOCK_MODE,
   IS_MOCK_MODE,
+  listBackupAssignments,
   listVacationAuditLogs,
   listVacations,
+  removeVacation,
   updateEmployeeBalance,
+  updateBackupAssignment,
 } from "../api/client";
 import CalendarControls from "../components/CalendarControls";
 import YearCalendarView from "../components/YearCalendarView";
@@ -33,18 +36,32 @@ function eventStyleGetter(event) {
   };
 }
 
+function formatYmd(value) {
+  if (!value) return "-";
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+  return format(new Date(value), "yyyy-MM-dd");
+}
+
 export default function AdminDashboard() {
   const { user } = useAuth();
   const currentYear = new Date().getFullYear();
   const [employees, setEmployees] = useState([]);
   const [approvedVacations, setApprovedVacations] = useState([]);
+  const [allPeriods, setAllPeriods] = useState([]);
+  const [backupAssignments, setBackupAssignments] = useState([]);
+  const [backupDrafts, setBackupDrafts] = useState({});
   const [auditLogs, setAuditLogs] = useState([]);
   const [loadingCalendar, setLoadingCalendar] = useState(false);
+  const [loadingPeriods, setLoadingPeriods] = useState(false);
   const [error, setError] = useState("");
   const [calendarView, setCalendarView] = useState("month");
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [balanceMessage, setBalanceMessage] = useState("");
   const [savingBalance, setSavingBalance] = useState(false);
+  const [savingBackupEmployeeId, setSavingBackupEmployeeId] = useState(null);
+  const [removingPeriodId, setRemovingPeriodId] = useState(null);
   const [calendarFilters, setCalendarFilters] = useState({
     employeeId: "",
     from: "",
@@ -61,6 +78,14 @@ export default function AdminDashboard() {
     () => approvedVacations.map(toCalendarEvent),
     [approvedVacations]
   );
+  const previewRemainingDays = useMemo(() => {
+    const total = Number(balanceForm.totalDays);
+    const used = Number(balanceForm.usedDays);
+    if (Number.isNaN(total) || Number.isNaN(used)) {
+      return "-";
+    }
+    return Math.max(0, total - used);
+  }, [balanceForm.totalDays, balanceForm.usedDays]);
 
   const loadEmployees = useCallback(async () => {
     const result = await getEmployees();
@@ -86,6 +111,22 @@ export default function AdminDashboard() {
     }
   }, []);
 
+  const loadAllPeriods = useCallback(async (activeFilters = {}) => {
+    setLoadingPeriods(true);
+    try {
+      const data = await listVacations({
+        employeeId: activeFilters.employeeId || undefined,
+        from: activeFilters.from || undefined,
+        to: activeFilters.to || undefined,
+      });
+      setAllPeriods(data);
+    } catch {
+      setError("Failed to load vacation periods.");
+    } finally {
+      setLoadingPeriods(false);
+    }
+  }, []);
+
   const loadAuditLogs = useCallback(async (activeFilters = {}) => {
     try {
       const data = await listVacationAuditLogs({
@@ -96,6 +137,23 @@ export default function AdminDashboard() {
       setAuditLogs(data);
     } catch {
       setError("Failed to load calendar audit logs.");
+    }
+  }, []);
+
+  const loadBackupAssignments = useCallback(async () => {
+    try {
+      const rows = await listBackupAssignments();
+      setBackupAssignments(rows);
+      setBackupDrafts(
+        Object.fromEntries(
+          rows.map((row) => [
+            String(row.employee_id),
+            row.backup_employee_id ? String(row.backup_employee_id) : "",
+          ])
+        )
+      );
+    } catch {
+      setError("Failed to load backup assignments.");
     }
   }, []);
 
@@ -129,17 +187,25 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    Promise.all([loadEmployees(), loadApprovedCalendar(), loadAuditLogs()]);
-  }, [loadEmployees, loadApprovedCalendar, loadAuditLogs]);
+    Promise.all([
+      loadEmployees(),
+      loadApprovedCalendar(),
+      loadAllPeriods(),
+      loadAuditLogs(),
+      loadBackupAssignments(),
+    ]);
+  }, [loadEmployees, loadApprovedCalendar, loadAllPeriods, loadAuditLogs, loadBackupAssignments]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
       loadApprovedCalendar(calendarFilters);
+      loadAllPeriods(calendarFilters);
       loadAuditLogs(calendarFilters);
     }, 15000);
 
     const handleFocus = () => {
       loadApprovedCalendar(calendarFilters);
+      loadAllPeriods(calendarFilters);
       loadAuditLogs(calendarFilters);
     };
 
@@ -149,7 +215,7 @@ export default function AdminDashboard() {
       window.clearInterval(intervalId);
       window.removeEventListener("focus", handleFocus);
     };
-  }, [calendarFilters, loadApprovedCalendar, loadAuditLogs]);
+  }, [calendarFilters, loadApprovedCalendar, loadAllPeriods, loadAuditLogs]);
 
   useEffect(() => {
     if (!employees.length) {
@@ -174,6 +240,7 @@ export default function AdminDashboard() {
     event.preventDefault();
     await Promise.all([
       loadApprovedCalendar(calendarFilters),
+      loadAllPeriods(calendarFilters),
       loadAuditLogs(calendarFilters),
     ]);
   };
@@ -203,6 +270,56 @@ export default function AdminDashboard() {
       setError(apiMessage || "Failed to adjust balance.");
     } finally {
       setSavingBalance(false);
+    }
+  };
+
+  const handleSaveBackupAssignment = async (employeeId) => {
+    setError("");
+    setBalanceMessage("");
+    setSavingBackupEmployeeId(employeeId);
+    try {
+      const selectedBackupId = backupDrafts[String(employeeId)] || null;
+      await updateBackupAssignment(employeeId, selectedBackupId);
+      await loadBackupAssignments();
+      setBalanceMessage("Backup assignment updated successfully.");
+    } catch (requestError) {
+      const apiMessage = requestError?.response?.data?.message;
+      setError(apiMessage || "Failed to save backup assignment.");
+    } finally {
+      setSavingBackupEmployeeId(null);
+    }
+  };
+
+  const handleAdminRemovePeriod = async (period) => {
+    if (!period || (period.STATUS || period.status) !== "APPROVED") {
+      return;
+    }
+    const periodId = period.ID || period.id;
+    const employeeName = period.EMPLOYEE_NAME || period.employee_name || "Employee";
+    const startDate = period.START_DATE || period.start_date;
+    const endDate = period.END_DATE || period.end_date;
+    const shouldDelete = window.confirm(
+      `Remove period for ${employeeName}: ${formatYmd(startDate)} to ${formatYmd(endDate)}?`
+    );
+    if (!shouldDelete) return;
+
+    setRemovingPeriodId(periodId);
+    setError("");
+    setBalanceMessage("");
+    try {
+      await removeVacation(periodId);
+      await Promise.all([
+        loadApprovedCalendar(calendarFilters),
+        loadAllPeriods(calendarFilters),
+        loadAuditLogs(calendarFilters),
+      ]);
+      await loadBalanceSnapshot(balanceForm.employeeId, balanceForm.year);
+      setBalanceMessage("Period removed and balances refreshed.");
+    } catch (requestError) {
+      const apiMessage = requestError?.response?.data?.message;
+      setError(apiMessage || "Failed to remove period.");
+    } finally {
+      setRemovingPeriodId(null);
     }
   };
 
@@ -292,7 +409,70 @@ export default function AdminDashboard() {
             </button>
           </div>
         </form>
+        <p className="hint-text">Available balance (preview): {previewRemainingDays}</p>
         {balanceMessage ? <p>{balanceMessage}</p> : null}
+      </div>
+
+      <div className="card">
+        <h3>Backup assignment management</h3>
+        <p className="hint-text">
+          Configure who is the backup for each employee. Vacation conflict validation follows this
+          mapping.
+        </p>
+        {!backupAssignments.length ? <p>No backup assignments available.</p> : null}
+        {backupAssignments.length > 0 ? (
+          <table className="requests-table">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Backup</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {backupAssignments.map((row) => (
+                <tr key={row.employee_id}>
+                  <td>{row.employee_name}</td>
+                  <td>
+                    <select
+                      value={backupDrafts[String(row.employee_id)] ?? ""}
+                      onChange={(event) =>
+                        setBackupDrafts((prev) => ({
+                          ...prev,
+                          [String(row.employee_id)]: event.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">No backup</option>
+                      {employees
+                        .filter(
+                          (employee) =>
+                            Number(employee.ID || employee.id) !== Number(row.employee_id)
+                        )
+                        .map((employee) => (
+                          <option
+                            key={`backup-${employee.ID || employee.id}`}
+                            value={employee.ID || employee.id}
+                          >
+                            {employee.NAME || employee.name}
+                          </option>
+                        ))}
+                    </select>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      onClick={() => handleSaveBackupAssignment(row.employee_id)}
+                      disabled={savingBackupEmployeeId === row.employee_id}
+                    >
+                      {savingBackupEmployeeId === row.employee_id ? "Saving..." : "Save backup"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : null}
       </div>
 
       <div className="card">
@@ -382,6 +562,54 @@ export default function AdminDashboard() {
             eventPropGetter={eventStyleGetter}
           />
         )}
+      </div>
+
+      <div className="card">
+        <h3>All scheduled periods</h3>
+        {loadingPeriods ? <p>Loading periods...</p> : null}
+        {!loadingPeriods && !allPeriods.length ? <p>No periods found.</p> : null}
+        {allPeriods.length > 0 ? (
+          <table className="requests-table">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Type</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Days</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allPeriods.map((period) => {
+                const periodId = period.ID || period.id;
+                const status = period.STATUS || period.status;
+                const eventType = period.EVENT_TYPE || period.event_type || "VACATION";
+                return (
+                  <tr key={periodId}>
+                    <td>{period.EMPLOYEE_NAME || period.employee_name}</td>
+                    <td>{eventType === "DAY_OFF" ? "Day Off" : "Vacation"}</td>
+                    <td>{formatYmd(period.START_DATE || period.start_date)}</td>
+                    <td>{formatYmd(period.END_DATE || period.end_date)}</td>
+                    <td>{period.REQUESTED_DAYS || period.requested_days || "-"}</td>
+                    <td>{status}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="danger"
+                        onClick={() => handleAdminRemovePeriod(period)}
+                        disabled={status !== "APPROVED" || removingPeriodId === periodId}
+                      >
+                        {removingPeriodId === periodId ? "Removing..." : "Remove"}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        ) : null}
       </div>
 
       <div className="card">

@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
+import { HashRouter } from "react-router-dom";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import App from "./App.jsx";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -10,10 +10,10 @@ const routerBase = import.meta.env.BASE_URL || "/";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <BrowserRouter basename={routerBase}>
+    <HashRouter basename={routerBase}>
       <AuthProvider>
         <App />
       </AuthProvider>
-    </BrowserRouter>
+    </HashRouter>
   </StrictMode>
 );

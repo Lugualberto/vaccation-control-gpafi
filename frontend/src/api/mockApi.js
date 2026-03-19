@@ -1,5 +1,5 @@
 import { AUTH_STORAGE_KEY } from "../constants/auth";
-import { BACKUP_BY_FIRST_NAME, normalizeFirstName } from "../constants/backups";
+import { INITIAL_BACKUP_BY_FIRST_NAME, normalizeFirstName } from "../constants/backups";
 
 const MOCK_DB_KEY = "vacation_app_mock_db";
 const SHARED_DB_RESOURCE = "shared-db";
@@ -10,6 +10,7 @@ const USE_SHARED_DB = SHARED_DB_API_BASE.startsWith("http");
 const CORPORATE_EMAIL_DOMAIN = String(
   import.meta.env.VITE_CORPORATE_EMAIL_DOMAIN || "nubank.com.br"
 ).toLowerCase();
+const DB_SCHEMA_VERSION = 2;
 
 function mockError(status, message) {
   const error = new Error(message);
@@ -45,94 +46,107 @@ function countCalendarDays(startDateString, endDateString) {
 
 function buildDefaultDb() {
   const currentYear = new Date().getFullYear();
+  const users = [
+    {
+      userId: 1,
+      employeeId: 1,
+      email: "luana.gualberto@nubank.com.br",
+      password: "Nubank@123",
+      role: "ADMIN",
+      name: "Luana Gualberto",
+      chapter: "Controllership",
+      hireDate: "2022-03-01",
+    },
+    {
+      userId: 2,
+      employeeId: 2,
+      email: "filipi.souza@nubank.com.br",
+      password: "Nubank@123",
+      role: "EMPLOYEE",
+      name: "Filipi Souza",
+      chapter: "Controllership",
+      hireDate: "2022-02-01",
+    },
+    {
+      userId: 3,
+      employeeId: 3,
+      email: "bianca.alves@nubank.com.br",
+      password: "Nubank@123",
+      role: "EMPLOYEE",
+      name: "Bianca Alves",
+      chapter: "Controllership",
+      hireDate: "2021-10-10",
+    },
+    {
+      userId: 4,
+      employeeId: 4,
+      email: "sabrina.costa@nubank.com.br",
+      password: "Nubank@123",
+      role: "EMPLOYEE",
+      name: "Sabrina Costa",
+      chapter: "Controllership",
+      hireDate: "2021-08-15",
+    },
+    {
+      userId: 5,
+      employeeId: 5,
+      email: "leticia.prado@nubank.com.br",
+      password: "Nubank@123",
+      role: "EMPLOYEE",
+      name: "Leticia Prado",
+      chapter: "Controllership",
+      hireDate: "2024-04-01",
+    },
+    {
+      userId: 6,
+      employeeId: 6,
+      email: "arturo.lima@nubank.com.br",
+      password: "Nubank@123",
+      role: "EMPLOYEE",
+      name: "Arturo Lima",
+      chapter: "Controllership",
+      hireDate: "2022-11-12",
+    },
+    {
+      userId: 7,
+      employeeId: 7,
+      email: "karen.rocha@nubank.com.br",
+      password: "Nubank@123",
+      role: "EMPLOYEE",
+      name: "Karen Rocha",
+      chapter: "Controllership",
+      hireDate: "2023-01-21",
+    },
+    {
+      userId: 8,
+      employeeId: 8,
+      email: "rafael.oliveira@nubank.com.br",
+      password: "Nubank@123",
+      role: "EMPLOYEE",
+      name: "Rafael Oliveira",
+      chapter: "Controllership",
+      hireDate: "2023-01-10",
+    },
+  ];
+
+  const firstNameToEmployeeId = Object.fromEntries(
+    users.map((user) => [normalizeFirstName(user.name), Number(user.employeeId)])
+  );
+  const backupByEmployeeId = Object.fromEntries(
+    Object.entries(INITIAL_BACKUP_BY_FIRST_NAME).map(([firstName, backupFirstName]) => [
+      String(firstNameToEmployeeId[firstName]),
+      backupFirstName ? firstNameToEmployeeId[backupFirstName] || null : null,
+    ])
+  );
 
   return {
+    schemaVersion: DB_SCHEMA_VERSION,
     counters: {
       vacationId: 4,
       auditId: 5,
     },
-    users: [
-      {
-        userId: 1,
-        employeeId: 1,
-        email: "luana.gualberto@nubank.com.br",
-        password: "Nubank@123",
-        role: "ADMIN",
-        name: "Luana Gualberto",
-        chapter: "Controllership",
-        hireDate: "2022-03-01",
-      },
-      {
-        userId: 2,
-        employeeId: 2,
-        email: "filipi.souza@nubank.com.br",
-        password: "Nubank@123",
-        role: "EMPLOYEE",
-        name: "Filipi Souza",
-        chapter: "Controllership",
-        hireDate: "2022-02-01",
-      },
-      {
-        userId: 3,
-        employeeId: 3,
-        email: "bianca.alves@nubank.com.br",
-        password: "Nubank@123",
-        role: "EMPLOYEE",
-        name: "Bianca Alves",
-        chapter: "Controllership",
-        hireDate: "2021-10-10",
-      },
-      {
-        userId: 4,
-        employeeId: 4,
-        email: "sabrina.costa@nubank.com.br",
-        password: "Nubank@123",
-        role: "EMPLOYEE",
-        name: "Sabrina Costa",
-        chapter: "Controllership",
-        hireDate: "2021-08-15",
-      },
-      {
-        userId: 5,
-        employeeId: 5,
-        email: "leticia.prado@nubank.com.br",
-        password: "Nubank@123",
-        role: "EMPLOYEE",
-        name: "Leticia Prado",
-        chapter: "Controllership",
-        hireDate: "2024-04-01",
-      },
-      {
-        userId: 6,
-        employeeId: 6,
-        email: "arturo.lima@nubank.com.br",
-        password: "Nubank@123",
-        role: "EMPLOYEE",
-        name: "Arturo Lima",
-        chapter: "Controllership",
-        hireDate: "2022-11-12",
-      },
-      {
-        userId: 7,
-        employeeId: 7,
-        email: "karen.rocha@nubank.com.br",
-        password: "Nubank@123",
-        role: "EMPLOYEE",
-        name: "Karen Rocha",
-        chapter: "Controllership",
-        hireDate: "2023-01-21",
-      },
-      {
-        userId: 8,
-        employeeId: 8,
-        email: "rafael.oliveira@nubank.com.br",
-        password: "Nubank@123",
-        role: "EMPLOYEE",
-        name: "Rafael Oliveira",
-        chapter: "Controllership",
-        hireDate: "2023-01-10",
-      },
-    ],
+    users,
+    backup_by_employee_id: backupByEmployeeId,
     balances: [
       { employee_id: 1, year: currentYear, total_days: 30, used_days: 5 },
       { employee_id: 2, year: currentYear, total_days: 30, used_days: 8 },
@@ -231,8 +245,75 @@ function isValidDbShape(value) {
       Array.isArray(value.users) &&
       Array.isArray(value.balances) &&
       Array.isArray(value.vacations) &&
-      Array.isArray(value.auditLogs)
+      Array.isArray(value.auditLogs) &&
+      value.backup_by_employee_id &&
+      typeof value.backup_by_employee_id === "object"
   );
+}
+
+function buildDefaultBackupMap(users) {
+  const firstNameToEmployeeId = Object.fromEntries(
+    users.map((user) => [normalizeFirstName(user.name), Number(user.employeeId)])
+  );
+  return Object.fromEntries(
+    Object.entries(INITIAL_BACKUP_BY_FIRST_NAME).map(([firstName, backupFirstName]) => [
+      String(firstNameToEmployeeId[firstName]),
+      backupFirstName ? firstNameToEmployeeId[backupFirstName] || null : null,
+    ])
+  );
+}
+
+function normalizeBackupMap(rawBackupMap, users) {
+  const defaults = buildDefaultBackupMap(users);
+  const normalized = { ...defaults };
+
+  if (!rawBackupMap || typeof rawBackupMap !== "object") {
+    return normalized;
+  }
+
+  for (const user of users) {
+    const employeeId = String(user.employeeId);
+    if (!Object.hasOwn(rawBackupMap, employeeId)) {
+      continue;
+    }
+
+    const backupEmployeeId = rawBackupMap[employeeId];
+    if (backupEmployeeId === null || backupEmployeeId === undefined || backupEmployeeId === "") {
+      normalized[employeeId] = null;
+      continue;
+    }
+
+    const parsedBackupId = Number(backupEmployeeId);
+    const backupExists = users.some((candidate) => Number(candidate.employeeId) === parsedBackupId);
+    normalized[employeeId] = backupExists ? parsedBackupId : null;
+  }
+
+  return normalized;
+}
+
+function migrateDbShape(rawDb) {
+  const defaults = buildDefaultDb();
+  const source = rawDb || {};
+  const users = Array.isArray(source.users) && source.users.length ? source.users : defaults.users;
+
+  return {
+    schemaVersion: DB_SCHEMA_VERSION,
+    counters: {
+      vacationId:
+        Number(source?.counters?.vacationId) > 0
+          ? Number(source.counters.vacationId)
+          : defaults.counters.vacationId,
+      auditId:
+        Number(source?.counters?.auditId) > 0
+          ? Number(source.counters.auditId)
+          : defaults.counters.auditId,
+    },
+    users,
+    backup_by_employee_id: normalizeBackupMap(source.backup_by_employee_id, users),
+    balances: Array.isArray(source.balances) ? source.balances : defaults.balances,
+    vacations: Array.isArray(source.vacations) ? source.vacations : defaults.vacations,
+    auditLogs: Array.isArray(source.auditLogs) ? source.auditLogs : defaults.auditLogs,
+  };
 }
 
 async function fetchSharedDb() {
@@ -258,23 +339,41 @@ async function writeSharedDb(db) {
 }
 
 async function readDb() {
+  const readLocalFallback = () => {
+    const localRaw = localStorage.getItem(MOCK_DB_KEY);
+    if (!localRaw) return null;
+    try {
+      return migrateDbShape(JSON.parse(localRaw));
+    } catch {
+      return null;
+    }
+  };
+
   if (USE_SHARED_DB) {
     try {
       const current = await fetchSharedDb();
       if (!current) {
-        const initial = buildDefaultDb();
+        const initial = readLocalFallback() || buildDefaultDb();
         await writeSharedDb(initial);
+        localStorage.setItem(MOCK_DB_KEY, JSON.stringify(initial));
         return initial;
       }
 
-      if (!isValidDbShape(current)) {
+      const migrated = migrateDbShape(current);
+      if (!isValidDbShape(migrated)) {
         const reset = buildDefaultDb();
         await writeSharedDb(reset);
+        localStorage.setItem(MOCK_DB_KEY, JSON.stringify(reset));
         return reset;
       }
 
-      return current;
+      localStorage.setItem(MOCK_DB_KEY, JSON.stringify(migrated));
+      return migrated;
     } catch {
+      const localFallback = readLocalFallback();
+      if (localFallback) {
+        return localFallback;
+      }
       throw mockError(
         503,
         "Shared calendar storage is temporarily unavailable. Please try again in a moment."
@@ -290,10 +389,11 @@ async function readDb() {
   }
 
   try {
-    const parsed = JSON.parse(raw);
+    const parsed = migrateDbShape(JSON.parse(raw));
     if (!isValidDbShape(parsed)) {
       throw new Error("invalid");
     }
+    localStorage.setItem(MOCK_DB_KEY, JSON.stringify(parsed));
     return parsed;
   } catch {
     const reset = buildDefaultDb();
@@ -303,6 +403,8 @@ async function readDb() {
 }
 
 async function writeDb(db) {
+  localStorage.setItem(MOCK_DB_KEY, JSON.stringify(db));
+
   if (USE_SHARED_DB) {
     try {
       await writeSharedDb(db);
@@ -314,8 +416,6 @@ async function writeDb(db) {
       );
     }
   }
-
-  localStorage.setItem(MOCK_DB_KEY, JSON.stringify(db));
 }
 
 function getAuthState() {
@@ -452,6 +552,8 @@ function ensureUserForCorporateEmail(db, email) {
     total_days: 30,
     used_days: 0,
   });
+  db.backup_by_employee_id = normalizeBackupMap(db.backup_by_employee_id, db.users);
+  db.backup_by_employee_id[String(newEmployeeId)] = null;
 
   return user;
 }
@@ -497,6 +599,84 @@ export async function mockGetEmployees() {
     chapter: user.chapter,
     role: user.role,
   }));
+}
+
+function formatBackupRow(employee, backupEmployee) {
+  return {
+    employee_id: employee.employeeId,
+    employee_name: employee.name,
+    backup_employee_id: backupEmployee?.employeeId || null,
+    backup_employee_name: backupEmployee?.name || null,
+  };
+}
+
+export async function mockListBackupAssignments() {
+  const actor = getCurrentUserOrThrow();
+  const db = await readDb();
+  const backupMap = normalizeBackupMap(db.backup_by_employee_id, db.users);
+
+  if (actor.role !== "ADMIN") {
+    const own = db.users.find((item) => Number(item.employeeId) === Number(actor.employeeId));
+    if (!own) return [];
+    const backupId = backupMap[String(own.employeeId)];
+    const backupEmployee = db.users.find(
+      (item) => Number(item.employeeId) === Number(backupId)
+    );
+    return [formatBackupRow(own, backupEmployee)];
+  }
+
+  return db.users.map((employee) => {
+    const backupId = backupMap[String(employee.employeeId)];
+    const backupEmployee = db.users.find((item) => Number(item.employeeId) === Number(backupId));
+    return formatBackupRow(employee, backupEmployee);
+  });
+}
+
+export async function mockUpdateBackupAssignment(employeeId, backupEmployeeId) {
+  const actor = getCurrentUserOrThrow();
+  if (actor.role !== "ADMIN") {
+    throw mockError(403, "Only admins can change backup assignments.");
+  }
+
+  const db = await readDb();
+  const employee = db.users.find((item) => Number(item.employeeId) === Number(employeeId));
+  if (!employee) {
+    throw mockError(404, "Employee not found.");
+  }
+
+  db.backup_by_employee_id = normalizeBackupMap(db.backup_by_employee_id, db.users);
+  const employeeKey = String(employee.employeeId);
+
+  if (backupEmployeeId === null || backupEmployeeId === undefined || backupEmployeeId === "") {
+    db.backup_by_employee_id[employeeKey] = null;
+    await writeDb(db);
+    return {
+      employee_id: employee.employeeId,
+      backup_employee_id: null,
+    };
+  }
+
+  const parsedBackupId = Number(backupEmployeeId);
+  if (Number.isNaN(parsedBackupId)) {
+    throw mockError(400, "Backup employee id must be numeric.");
+  }
+
+  if (parsedBackupId === Number(employee.employeeId)) {
+    throw mockError(400, "An employee cannot be their own backup.");
+  }
+
+  const backupEmployee = db.users.find((item) => Number(item.employeeId) === parsedBackupId);
+  if (!backupEmployee) {
+    throw mockError(404, "Backup employee not found.");
+  }
+
+  db.backup_by_employee_id[employeeKey] = parsedBackupId;
+  await writeDb(db);
+
+  return {
+    employee_id: employee.employeeId,
+    backup_employee_id: parsedBackupId,
+  };
 }
 
 export async function mockGetEmployeeById(employeeId) {
@@ -667,34 +847,31 @@ export async function mockCreateVacation(payload) {
   const db = await readDb();
   const requestedDays = countCalendarDays(startDate, endDate);
   const employee = db.users.find((item) => Number(item.employeeId) === employeeId);
+  db.backup_by_employee_id = normalizeBackupMap(db.backup_by_employee_id, db.users);
 
   if (eventType === "VACATION") {
-    const actorFirstName = normalizeFirstName(actor.name);
-    const backupFirstName = BACKUP_BY_FIRST_NAME[actorFirstName];
-
-    if (backupFirstName) {
-      const backupUser = db.users.find((item) => normalizeFirstName(item.name) === backupFirstName);
-      if (backupUser) {
-        const hasConflict = db.vacations.some((item) => {
-          if (
-            Number(item.employee_id) !== Number(backupUser.employeeId) ||
-            item.status !== "APPROVED" ||
-            (item.event_type || "VACATION") !== "VACATION"
-          ) {
-            return false;
-          }
-
-          const existingStart = parseDate(item.start_date);
-          const existingEnd = parseDate(item.end_date);
-          return existingStart <= end && existingEnd >= start;
-        });
-
-        if (hasConflict) {
-          throw mockError(
-            409,
-            `This period conflicts with ${backupUser.name}'s vacation. Align with them or choose another period.`
-          );
+    const backupEmployeeId = db.backup_by_employee_id[String(employeeId)];
+    if (backupEmployeeId) {
+      const backupUser = db.users.find((item) => Number(item.employeeId) === Number(backupEmployeeId));
+      const hasConflict = db.vacations.some((item) => {
+        if (
+          Number(item.employee_id) !== Number(backupEmployeeId) ||
+          item.status !== "APPROVED" ||
+          (item.event_type || "VACATION") !== "VACATION"
+        ) {
+          return false;
         }
+
+        const existingStart = parseDate(item.start_date);
+        const existingEnd = parseDate(item.end_date);
+        return existingStart && existingEnd && existingStart <= end && existingEnd >= start;
+      });
+
+      if (hasConflict) {
+        throw mockError(
+          409,
+          `This period conflicts with ${backupUser?.name || "your backup"}'s vacation. Align with them or choose another period.`
+        );
       }
     }
   }
@@ -714,6 +891,12 @@ export async function mockCreateVacation(payload) {
     updated_at: createdAt,
   };
   db.vacations.push(vacation);
+
+  if (eventType === "VACATION") {
+    const year = Number(startDate.slice(0, 4));
+    const balance = getOrCreateBalance(db, employeeId, year);
+    balance.used_days = Number(balance.used_days) + requestedDays;
+  }
 
   db.auditLogs.push({
     id: db.counters.auditId++,
@@ -748,6 +931,17 @@ export async function mockRemoveVacation(vacationId) {
 
   if (vacation.status !== "APPROVED") {
     throw mockError(400, "Only active vacations can be removed.");
+  }
+
+  if ((vacation.event_type || "VACATION") === "VACATION") {
+    const year = Number(String(vacation.start_date || "").slice(0, 4));
+    if (!Number.isNaN(year)) {
+      const balance = getOrCreateBalance(db, vacation.employee_id, year);
+      balance.used_days = Math.max(
+        0,
+        Number(balance.used_days) - Number(vacation.requested_days || 0)
+      );
+    }
   }
 
   vacation.status = "CANCELLED";

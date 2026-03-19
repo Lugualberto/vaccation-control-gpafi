@@ -5,11 +5,13 @@ import {
   mockGetEmployeeById,
   mockGetEmployeeVacations,
   mockGetEmployees,
+  mockListBackupAssignments,
   mockListVacationAuditLogs,
   mockListVacations,
   mockLoginWithCorporateEmail,
   mockRemoveVacation,
   mockUpdateEmployeeBalance,
+  mockUpdateBackupAssignment,
 } from "./mockApi";
 
 export const IS_MOCK_MODE = true;
@@ -60,6 +62,14 @@ export async function createVacation(payload) {
 
 export async function removeVacation(vacationId) {
   return mockRemoveVacation(vacationId);
+}
+
+export async function listBackupAssignments() {
+  return mockListBackupAssignments();
+}
+
+export async function updateBackupAssignment(employeeId, backupEmployeeId) {
+  return mockUpdateBackupAssignment(employeeId, backupEmployeeId);
 }
 
 export default null;

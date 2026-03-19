@@ -1,9 +1,10 @@
-export const BACKUP_BY_FIRST_NAME = {
+export const INITIAL_BACKUP_BY_FIRST_NAME = {
   filipi: "bianca",
-  bianca: "sabrina",
-  sabrina: "filipi",
-  leticia: null,
-  luana: null,
+  bianca: "filipi",
+  sabrina: "leticia",
+  leticia: "sabrina",
+  luana: "rafael",
+  rafael: "luana",
   arturo: "karen",
   karen: "arturo",
 };
@@ -22,7 +23,7 @@ export function formatFirstName(firstName) {
 
 export function getBackupInfoFromFullName(fullName) {
   const firstName = normalizeFirstName(fullName);
-  const backupFirstName = BACKUP_BY_FIRST_NAME[firstName];
+  const backupFirstName = INITIAL_BACKUP_BY_FIRST_NAME[firstName];
 
   if (backupFirstName === undefined || backupFirstName === null) {
     return {
