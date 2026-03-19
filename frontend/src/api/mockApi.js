@@ -235,56 +235,45 @@ function isValidDbShape(value) {
   );
 }
 
-async function fetchSharedRecords() {
+async function fetchSharedDb() {
   const response = await fetch(`${SHARED_DB_API_BASE}/${SHARED_DB_RESOURCE}`);
+  if (response.status === 404) {
+    return null;
+  }
   if (!response.ok) {
     throw new Error("shared_read_failed");
   }
   return response.json();
 }
 
-async function createSharedRecord(db) {
+async function writeSharedDb(db) {
   const response = await fetch(`${SHARED_DB_API_BASE}/${SHARED_DB_RESOURCE}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(db),
   });
   if (!response.ok) {
-    throw new Error("shared_create_failed");
-  }
-  return response.json();
-}
-
-async function updateSharedRecord(recordId, db) {
-  const response = await fetch(`${SHARED_DB_API_BASE}/${SHARED_DB_RESOURCE}/${recordId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(db),
-  });
-  if (!response.ok) {
-    throw new Error("shared_update_failed");
+    throw new Error("shared_write_failed");
   }
 }
 
 async function readDb() {
   if (USE_SHARED_DB) {
     try {
-      const records = await fetchSharedRecords();
-      const current = records[0];
+      const current = await fetchSharedDb();
       if (!current) {
         const initial = buildDefaultDb();
-        await createSharedRecord(initial);
+        await writeSharedDb(initial);
         return initial;
       }
 
-      const { _id: _recordId, ...db } = current;
-      if (!isValidDbShape(db)) {
+      if (!isValidDbShape(current)) {
         const reset = buildDefaultDb();
-        await updateSharedRecord(current._id, reset);
+        await writeSharedDb(reset);
         return reset;
       }
 
-      return db;
+      return current;
     } catch {
       throw mockError(
         503,
@@ -316,13 +305,7 @@ async function readDb() {
 async function writeDb(db) {
   if (USE_SHARED_DB) {
     try {
-      const records = await fetchSharedRecords();
-      const current = records[0];
-      if (!current) {
-        await createSharedRecord(db);
-        return;
-      }
-      await updateSharedRecord(current._id, db);
+      await writeSharedDb(db);
       return;
     } catch {
       throw mockError(
