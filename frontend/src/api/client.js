@@ -14,6 +14,9 @@ import {
 
 export const IS_MOCK_MODE = true;
 export const CORPORATE_EMAIL_DOMAIN = import.meta.env.VITE_CORPORATE_EMAIL_DOMAIN || "nubank.com.br";
+export const IS_SHARED_MOCK_MODE = Boolean(
+  String(import.meta.env.VITE_SHARED_DB_API_BASE || "").trim()
+);
 
 export async function loginWithCorporateEmail(email) {
   return mockLoginWithCorporateEmail(email);

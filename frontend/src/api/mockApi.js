@@ -2,6 +2,11 @@ import { AUTH_STORAGE_KEY } from "../constants/auth";
 import { BACKUP_BY_FIRST_NAME, normalizeFirstName } from "../constants/backups";
 
 const MOCK_DB_KEY = "vacation_app_mock_db";
+const SHARED_DB_RESOURCE = "shared-db";
+const SHARED_DB_API_BASE = String(
+  import.meta.env.VITE_SHARED_DB_API_BASE || ""
+).replace(/\/+$/, "");
+const USE_SHARED_DB = SHARED_DB_API_BASE.startsWith("http");
 const CORPORATE_EMAIL_DOMAIN = String(
   import.meta.env.VITE_CORPORATE_EMAIL_DOMAIN || "nubank.com.br"
 ).toLowerCase();
@@ -217,7 +222,77 @@ function buildDefaultDb() {
   };
 }
 
-function readDb() {
+function isValidDbShape(value) {
+  return Boolean(
+    value &&
+      value.counters &&
+      typeof value.counters.vacationId === "number" &&
+      typeof value.counters.auditId === "number" &&
+      Array.isArray(value.users) &&
+      Array.isArray(value.balances) &&
+      Array.isArray(value.vacations) &&
+      Array.isArray(value.auditLogs)
+  );
+}
+
+async function fetchSharedRecords() {
+  const response = await fetch(`${SHARED_DB_API_BASE}/${SHARED_DB_RESOURCE}`);
+  if (!response.ok) {
+    throw new Error("shared_read_failed");
+  }
+  return response.json();
+}
+
+async function createSharedRecord(db) {
+  const response = await fetch(`${SHARED_DB_API_BASE}/${SHARED_DB_RESOURCE}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(db),
+  });
+  if (!response.ok) {
+    throw new Error("shared_create_failed");
+  }
+  return response.json();
+}
+
+async function updateSharedRecord(recordId, db) {
+  const response = await fetch(`${SHARED_DB_API_BASE}/${SHARED_DB_RESOURCE}/${recordId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(db),
+  });
+  if (!response.ok) {
+    throw new Error("shared_update_failed");
+  }
+}
+
+async function readDb() {
+  if (USE_SHARED_DB) {
+    try {
+      const records = await fetchSharedRecords();
+      const current = records[0];
+      if (!current) {
+        const initial = buildDefaultDb();
+        await createSharedRecord(initial);
+        return initial;
+      }
+
+      const { _id: _recordId, ...db } = current;
+      if (!isValidDbShape(db)) {
+        const reset = buildDefaultDb();
+        await updateSharedRecord(current._id, reset);
+        return reset;
+      }
+
+      return db;
+    } catch {
+      throw mockError(
+        503,
+        "Shared calendar storage is temporarily unavailable. Please try again in a moment."
+      );
+    }
+  }
+
   const raw = localStorage.getItem(MOCK_DB_KEY);
   if (!raw) {
     const initial = buildDefaultDb();
@@ -227,7 +302,7 @@ function readDb() {
 
   try {
     const parsed = JSON.parse(raw);
-    if (!parsed?.users || !parsed?.balances || !parsed?.vacations || !parsed?.auditLogs) {
+    if (!isValidDbShape(parsed)) {
       throw new Error("invalid");
     }
     return parsed;
@@ -238,7 +313,25 @@ function readDb() {
   }
 }
 
-function writeDb(db) {
+async function writeDb(db) {
+  if (USE_SHARED_DB) {
+    try {
+      const records = await fetchSharedRecords();
+      const current = records[0];
+      if (!current) {
+        await createSharedRecord(db);
+        return;
+      }
+      await updateSharedRecord(current._id, db);
+      return;
+    } catch {
+      throw mockError(
+        503,
+        "Could not save to shared calendar storage. Please try again."
+      );
+    }
+  }
+
   localStorage.setItem(MOCK_DB_KEY, JSON.stringify(db));
 }
 
@@ -381,9 +474,9 @@ function ensureUserForCorporateEmail(db, email) {
 }
 
 export async function mockLoginWithCorporateEmail(email) {
-  const db = readDb();
+  const db = await readDb();
   const account = ensureUserForCorporateEmail(db, email);
-  writeDb(db);
+  await writeDb(db);
 
   return {
     token: `mock-corporate-${account.userId}-${Date.now()}`,
@@ -397,7 +490,7 @@ export async function mockGetCurrentUser() {
 
 export async function mockGetEmployees() {
   const actor = getCurrentUserOrThrow();
-  const db = readDb();
+  const db = await readDb();
 
   if (actor.role !== "ADMIN") {
     const own = db.users.find((item) => Number(item.employeeId) === Number(actor.employeeId));
@@ -429,7 +522,7 @@ export async function mockGetEmployeeById(employeeId) {
     throw mockError(403, "No permission to access this employee.");
   }
 
-  const db = readDb();
+  const db = await readDb();
   const found = db.users.find((item) => Number(item.employeeId) === Number(employeeId));
   if (!found) {
     throw mockError(404, "Employee not found.");
@@ -450,9 +543,9 @@ export async function mockGetEmployeeBalance(employeeId, year) {
     throw mockError(403, "No permission to view this balance.");
   }
 
-  const db = readDb();
+  const db = await readDb();
   const balance = getOrCreateBalance(db, employeeId, year);
-  writeDb(db);
+  await writeDb(db);
   return withRemaining(balance);
 }
 
@@ -473,11 +566,11 @@ export async function mockUpdateEmployeeBalance(employeeId, year, payload) {
     throw mockError(400, "Days cannot be negative.");
   }
 
-  const db = readDb();
+  const db = await readDb();
   const balance = getOrCreateBalance(db, employeeId, year);
   balance.total_days = totalDays;
   balance.used_days = usedDays;
-  writeDb(db);
+  await writeDb(db);
 
   return withRemaining(balance);
 }
@@ -488,7 +581,7 @@ export async function mockGetEmployeeVacations(employeeId, status) {
     throw mockError(403, "No permission to view this history.");
   }
 
-  const db = readDb();
+  const db = await readDb();
   let result = db.vacations.filter((item) => Number(item.employee_id) === Number(employeeId));
   if (status) {
     const normalizedStatus = String(status).toUpperCase();
@@ -500,7 +593,7 @@ export async function mockGetEmployeeVacations(employeeId, status) {
 
 export async function mockListVacations(filters = {}) {
   getCurrentUserOrThrow();
-  const db = readDb();
+  const db = await readDb();
 
   const normalizedStatus = filters.status ? String(filters.status).toUpperCase() : null;
   const fromDate = parseFilterDate(filters.from);
@@ -530,7 +623,7 @@ export async function mockListVacations(filters = {}) {
 
 export async function mockListVacationAuditLogs(filters = {}) {
   const actor = getCurrentUserOrThrow();
-  const db = readDb();
+  const db = await readDb();
 
   const fromDate = parseFilterDate(filters.from);
   const toDate = parseFilterDate(filters.to);
@@ -588,7 +681,7 @@ export async function mockCreateVacation(payload) {
     throw mockError(400, "Invalid vacation dates.");
   }
 
-  const db = readDb();
+  const db = await readDb();
   const requestedDays = countCalendarDays(startDate, endDate);
   const employee = db.users.find((item) => Number(item.employeeId) === employeeId);
 
@@ -651,13 +744,13 @@ export async function mockCreateVacation(payload) {
     action_at: nowIso(),
   });
 
-  writeDb(db);
+  await writeDb(db);
   return vacation;
 }
 
 export async function mockRemoveVacation(vacationId) {
   const actor = getCurrentUserOrThrow();
-  const db = readDb();
+  const db = await readDb();
 
   const vacation = db.vacations.find((item) => Number(item.id) === Number(vacationId));
   if (!vacation) {
@@ -689,6 +782,6 @@ export async function mockRemoveVacation(vacationId) {
     action_at: nowIso(),
   });
 
-  writeDb(db);
+  await writeDb(db);
   return { message: "Vacation removed from calendar successfully." };
 }

@@ -53,6 +53,7 @@ jobs:
         working-directory: frontend
         env:
           VITE_BASE_PATH: ${{ env.VITE_BASE_PATH }}
+          VITE_SHARED_DB_API_BASE: https://crudcrud.com/api/cbd18984d3a14aa5acb5fc5eb0d182de
 
       - name: Add SPA fallback
         run: cp frontend/dist/index.html frontend/dist/404.html

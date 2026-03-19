@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   getEmployeeBalance,
   getEmployees,
+  IS_SHARED_MOCK_MODE,
   IS_MOCK_MODE,
   listVacationAuditLogs,
   listVacations,
@@ -193,7 +194,9 @@ export default function AdminDashboard() {
         <p>View team calendar, audit logs, and adjust annual balances.</p>
         {IS_MOCK_MODE ? (
           <p className="hint-text">
-            Mock mode active: data is stored in the browser without balance/conflict validation.
+            {IS_SHARED_MOCK_MODE
+              ? "Shared prototype mode: everyone sees the same events and balances."
+              : "Mock mode active: data is stored in this browser without balance/conflict validation."}
           </p>
         ) : null}
         <p className="hint-text">Session: {user?.email || user?.EMAIL}</p>

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   createVacation,
   getEmployeeBalance,
+  IS_SHARED_MOCK_MODE,
   IS_MOCK_MODE,
   listVacations,
   listVacationAuditLogs,
@@ -228,7 +229,11 @@ export default function EmployeeDashboard() {
       <div className="card">
         <h2>Employee Dashboard</h2>
         {IS_MOCK_MODE ? (
-          <p className="hint-text">Mock mode active: balances and events are stored locally.</p>
+          <p className="hint-text">
+            {IS_SHARED_MOCK_MODE
+              ? "Shared prototype mode: balances and events are synchronized for all users."
+              : "Mock mode active: balances and events are stored locally in this browser."}
+          </p>
         ) : null}
         {loading ? <p>Loading data...</p> : null}
         {error ? <p className="error-text">{error}</p> : null}
