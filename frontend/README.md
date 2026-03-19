@@ -56,6 +56,8 @@ Integração principal:
   - inclusao e remocao de periodos no calendario
   - selecao de tipo de evento (Ferias / Day Off)
   - validacao de conflito com backup (somente para Ferias)
+  - chip informando backup do colaborador
+  - filtro rapido: `Time inteiro` ou `So minhas ferias`
   - preenchimento manual do saldo do periodo aquisitivo
   - visualizacao das ferias/day offs dos colegas no calendario
   - visao de calendario em Month/Week/Day/Agenda/Year

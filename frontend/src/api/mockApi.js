@@ -1,15 +1,7 @@
 import { AUTH_STORAGE_KEY } from "../constants/auth";
+import { BACKUP_BY_FIRST_NAME, normalizeFirstName } from "../constants/backups";
 
 const MOCK_DB_KEY = "vacation_app_mock_db";
-const BACKUP_BY_FIRST_NAME = {
-  filipi: "bianca",
-  bianca: "sabrina",
-  sabrina: "filipi",
-  leticia: null,
-  luana: null,
-  arturo: "karen",
-  karen: "arturo",
-};
 
 function mockError(status, message) {
   const error = new Error(message);
@@ -285,13 +277,6 @@ function normalizeUser(user) {
   };
 }
 
-function getFirstName(name) {
-  return String(name || "")
-    .trim()
-    .split(/\s+/)[0]
-    ?.toLowerCase();
-}
-
 function canAccessEmployee(actor, employeeId) {
   return actor.role === "ADMIN" || Number(actor.employeeId) === Number(employeeId);
 }
@@ -550,11 +535,11 @@ export async function mockCreateVacation(payload) {
   const employee = db.users.find((item) => Number(item.employeeId) === employeeId);
 
   if (eventType === "VACATION") {
-    const actorFirstName = getFirstName(actor.name);
+    const actorFirstName = normalizeFirstName(actor.name);
     const backupFirstName = BACKUP_BY_FIRST_NAME[actorFirstName];
 
     if (backupFirstName) {
-      const backupUser = db.users.find((item) => getFirstName(item.name) === backupFirstName);
+      const backupUser = db.users.find((item) => normalizeFirstName(item.name) === backupFirstName);
       if (backupUser) {
         const hasConflict = db.vacations.some((item) => {
           if (

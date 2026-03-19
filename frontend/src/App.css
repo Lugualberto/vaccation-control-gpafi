@@ -188,6 +188,37 @@
   color: #4c1d95;
 }
 
+.backup-chip-row {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.backup-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ede9fe;
+  color: #4c1d95;
+  border: 1px solid #ddd6fe;
+  border-radius: 9999px;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+}
+
+.backup-chip.subtle {
+  background: #faf5ff;
+  color: #6b7280;
+}
+
+.scope-toggle {
+  margin-top: 10px;
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .calendar-legend {
   display: flex;
   flex-wrap: wrap;

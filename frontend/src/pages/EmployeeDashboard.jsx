@@ -12,6 +12,7 @@ import {
 import CalendarControls from "../components/CalendarControls";
 import VacationRequestModal from "../components/VacationRequestModal";
 import YearCalendarView from "../components/YearCalendarView";
+import { getBackupInfoFromFullName } from "../constants/backups";
 import { useAuth } from "../contexts/useAuth";
 import { Calendar, formats, localizer, toCalendarEvent } from "../utils/calendar";
 
@@ -77,6 +78,7 @@ export default function EmployeeDashboard() {
   const [selectedRange, setSelectedRange] = useState(null);
   const [calendarView, setCalendarView] = useState("month");
   const [calendarDate, setCalendarDate] = useState(new Date());
+  const [calendarScope, setCalendarScope] = useState("TEAM");
   const [balanceForm, setBalanceForm] = useState({
     totalDays: "30",
     usedDays: "0",
@@ -87,6 +89,16 @@ export default function EmployeeDashboard() {
   const currentYear = new Date().getFullYear();
   const employeeId = Number(user?.employeeId);
   const events = useMemo(() => eventsData.map(toCalendarEvent), [eventsData]);
+  const visibleEvents = useMemo(() => {
+    if (calendarScope === "MINE") {
+      return events.filter((event) => Number(event.employeeId) === Number(employeeId));
+    }
+    return events;
+  }, [calendarScope, events, employeeId]);
+  const backupInfo = useMemo(
+    () => getBackupInfoFromFullName(user?.name || user?.NAME),
+    [user]
+  );
 
   const loadData = useCallback(async () => {
     if (!employeeId) return;
@@ -277,6 +289,36 @@ export default function EmployeeDashboard() {
           Selecione um intervalo para incluir um evento. Clique em um evento para remover
           (somente os seus).
         </p>
+        <div className="backup-chip-row">
+          <span className="backup-chip">
+            Meu backup: <strong>{backupInfo.backupDisplayName}</strong>
+          </span>
+          {backupInfo.backupFirstName ? (
+            <span className="backup-chip subtle">
+              Regra ativa: férias não podem conflitar com {backupInfo.backupDisplayName}.
+            </span>
+          ) : (
+            <span className="backup-chip subtle">
+              Regra de backup não aplicada para new hire nesta fase.
+            </span>
+          )}
+        </div>
+        <div className="scope-toggle">
+          <button
+            type="button"
+            className={calendarScope === "TEAM" ? "view-active" : "ghost"}
+            onClick={() => setCalendarScope("TEAM")}
+          >
+            Time inteiro
+          </button>
+          <button
+            type="button"
+            className={calendarScope === "MINE" ? "view-active" : "ghost"}
+            onClick={() => setCalendarScope("MINE")}
+          >
+            Só minhas férias
+          </button>
+        </div>
 
         <CalendarControls
           activeView={calendarView}
@@ -303,12 +345,12 @@ export default function EmployeeDashboard() {
         </div>
 
         {calendarView === "year" ? (
-          <YearCalendarView date={calendarDate} events={events} />
+          <YearCalendarView date={calendarDate} events={visibleEvents} />
         ) : (
           <Calendar
             localizer={localizer}
             culture="pt-BR"
-            events={events}
+            events={visibleEvents}
             startAccessor="start"
             endAccessor="end"
             selectable
