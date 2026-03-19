@@ -53,13 +53,14 @@ Integração principal:
 - dashboard do colaborador com:
   - inclusao e remocao de periodos no calendario
   - preenchimento manual do saldo do periodo aquisitivo
+  - sem validacao de saldo/conflito nesta fase de prototipo
 - dashboard admin com:
   - calendario consolidado de periodos programados
   - filtro por colaborador e periodo
   - formulario para ajustar saldo anual de ferias
   - tabela de auditoria (inclusao/remocao no calendario)
 
-Observacao: a contagem exibida no modal considera **dias uteis** (segunda a sexta).
+Observacao: a contagem exibida no modal considera **dias corridos** (apenas informativo).
 
 ## Credenciais mock para teste
 

@@ -33,11 +33,12 @@ Projeto full-stack com:
 ## Assunções da versão inicial
 
 1. O período de férias deve começar e terminar no **mesmo ano**.
-2. O cálculo de dias está em **dias úteis** (segunda a sexta).
+2. No modo mock atual, o cálculo exibido no modal considera **dias corridos** (informativo).
 3. Nesta fase inicial, o frontend roda em **modo mock local** por padrão (`VITE_USE_MOCK_DATA=true`) para validar interface sem Oracle.
 4. Cada colaborador pode preencher manualmente seu saldo do período aquisitivo para testes.
 5. Não existe aprovação de gestor: o próprio funcionário programa/remove suas férias.
 6. Inclusões/remocoes de calendário ficam registradas em auditoria.
+7. Nesta fase de protótipo, não há validação automática de conflito de período nem consumo automático do saldo manual.
 
 ## Como rodar
 

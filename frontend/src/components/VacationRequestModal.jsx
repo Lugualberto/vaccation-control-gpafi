@@ -4,15 +4,12 @@ function formatDate(date) {
   return date.toISOString().slice(0, 10);
 }
 
-function countBusinessDays(startDate, endDate) {
+function countCalendarDays(startDate, endDate) {
   const cursor = new Date(startDate);
   let count = 0;
 
   while (cursor <= endDate) {
-    const day = cursor.getDay();
-    if (day !== 0 && day !== 6) {
-      count += 1;
-    }
+    count += 1;
     cursor.setDate(cursor.getDate() + 1);
   }
 
@@ -27,11 +24,11 @@ export default function VacationRequestModal({ open, selectedRange, onClose, onC
     if (!selectedRange) {
       return null;
     }
-    const businessDays = countBusinessDays(selectedRange.start, selectedRange.end);
+    const calendarDays = countCalendarDays(selectedRange.start, selectedRange.end);
     return {
       startDate: formatDate(selectedRange.start),
       endDate: formatDate(selectedRange.end),
-      businessDays,
+      calendarDays,
     };
   }, [selectedRange]);
 
@@ -63,7 +60,7 @@ export default function VacationRequestModal({ open, selectedRange, onClose, onC
           Período: <strong>{period.startDate}</strong> até <strong>{period.endDate}</strong>
         </p>
         <p>
-          Dias úteis estimados: <strong>{period.businessDays}</strong>
+          Dias corridos estimados: <strong>{period.calendarDays}</strong>
         </p>
         <form onSubmit={handleSubmit}>
           <label htmlFor="justification">Justificativa (opcional)</label>

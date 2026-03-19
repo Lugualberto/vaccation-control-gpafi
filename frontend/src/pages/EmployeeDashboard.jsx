@@ -157,7 +157,8 @@ export default function EmployeeDashboard() {
         <h2>Dashboard do Colaborador</h2>
         {IS_MOCK_MODE ? (
           <p className="hint-text">
-            Modo de teste sem Oracle ativo: saldo e ferias salvos localmente no navegador.
+            Modo de teste sem Oracle ativo: saldo e ferias salvos localmente no navegador, sem
+            validacao de conflito/saldo.
           </p>
         ) : null}
         {loading ? <p>Carregando dados...</p> : null}
@@ -182,6 +183,7 @@ export default function EmployeeDashboard() {
           <h3>Periodo aquisitivo (manual)</h3>
           <p className="hint-text">
             Informe manualmente seu saldo neste primeiro momento para testar a interface.
+            O calendario nao altera automaticamente este saldo.
           </p>
           <label>
             Total de dias no periodo

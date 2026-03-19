@@ -23,23 +23,15 @@ function parseDate(dateString) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function countBusinessDays(startDateString, endDateString) {
+function countCalendarDays(startDateString, endDateString) {
   const start = parseDate(startDateString);
   const end = parseDate(endDateString);
   if (!start || !end || end < start) {
     throw mockError(400, "Datas invalidas. Use YYYY-MM-DD e periodo valido.");
   }
 
-  let total = 0;
-  const cursor = new Date(start);
-  while (cursor <= end) {
-    const day = cursor.getUTCDay();
-    if (day !== 0 && day !== 6) {
-      total += 1;
-    }
-    cursor.setUTCDate(cursor.getUTCDate() + 1);
-  }
-  return total;
+  const millisecondsPerDay = 1000 * 60 * 60 * 24;
+  return Math.floor((end - start) / millisecondsPerDay) + 1;
 }
 
 function buildDefaultDb() {
@@ -423,33 +415,9 @@ export async function mockCreateVacation(payload) {
     throw mockError(400, "Datas invalidas para ferias.");
   }
 
-  if (start.getUTCFullYear() !== end.getUTCFullYear()) {
-    throw mockError(400, "Periodo deve iniciar e terminar no mesmo ano.");
-  }
-
   const db = readDb();
-  const overlap = db.vacations.some((item) => {
-    if (Number(item.employee_id) !== employeeId || item.status !== "APPROVED") {
-      return false;
-    }
-    const existingStart = parseDate(item.start_date);
-    const existingEnd = parseDate(item.end_date);
-    return existingStart <= end && existingEnd >= start;
-  });
-
-  if (overlap) {
-    throw mockError(409, "Existe sobreposicao com ferias ja programadas.");
-  }
-
-  const requestedDays = countBusinessDays(startDate, endDate);
-  if (requestedDays <= 0) {
-    throw mockError(400, "Periodo deve conter ao menos um dia util.");
-  }
-
+  const requestedDays = countCalendarDays(startDate, endDate);
   const employee = db.users.find((item) => Number(item.employeeId) === employeeId);
-  const year = start.getUTCFullYear();
-  const balance = getOrCreateBalance(db, employeeId, year);
-  balance.used_days = Number(balance.used_days) + requestedDays;
 
   const createdAt = nowIso();
   const vacation = {
@@ -474,7 +442,7 @@ export async function mockCreateVacation(payload) {
     actor_user_id: actor.userId,
     actor_name: actor.name,
     action: "CREATED",
-    details: `Periodo ${startDate} a ${endDate}; dias_uteis=${requestedDays}`,
+    details: `Periodo ${startDate} a ${endDate}; dias_corridos=${requestedDays}`,
     action_at: nowIso(),
   });
 
@@ -504,10 +472,6 @@ export async function mockRemoveVacation(vacationId) {
   vacation.status = "CANCELLED";
   vacation.updated_at = nowIso();
 
-  const year = parseDate(vacation.start_date).getUTCFullYear();
-  const balance = getOrCreateBalance(db, vacation.employee_id, year);
-  balance.used_days = Math.max(0, Number(balance.used_days) - Number(vacation.requested_days));
-
   db.auditLogs.push({
     id: db.counters.auditId++,
     vacation_request_id: vacation.id,
@@ -516,7 +480,7 @@ export async function mockRemoveVacation(vacationId) {
     actor_user_id: actor.userId,
     actor_name: actor.name,
     action: "DELETED",
-    details: `Periodo ${vacation.start_date} a ${vacation.end_date}; dias_uteis=${vacation.requested_days}`,
+    details: `Periodo ${vacation.start_date} a ${vacation.end_date}; dias_corridos=${vacation.requested_days}`,
     action_at: nowIso(),
   });
 

@@ -180,7 +180,8 @@ export default function AdminDashboard() {
         <p>Visualize o calendario da equipe, auditoria e ajuste saldos anuais.</p>
         {IS_MOCK_MODE ? (
           <p className="hint-text">
-            Modo de teste sem Oracle ativo: os dados estao sendo persistidos no navegador.
+            Modo de teste sem Oracle ativo: os dados estao sendo persistidos no navegador, sem
+            validacao de conflito/saldo.
           </p>
         ) : null}
         <p className="hint-text">Sessao: {user?.email || user?.EMAIL}</p>
