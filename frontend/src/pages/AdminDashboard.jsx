@@ -133,6 +133,25 @@ export default function AdminDashboard() {
   }, [loadEmployees, loadApprovedCalendar, loadAuditLogs]);
 
   useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      loadApprovedCalendar(calendarFilters);
+      loadAuditLogs(calendarFilters);
+    }, 15000);
+
+    const handleFocus = () => {
+      loadApprovedCalendar(calendarFilters);
+      loadAuditLogs(calendarFilters);
+    };
+
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [calendarFilters, loadApprovedCalendar, loadAuditLogs]);
+
+  useEffect(() => {
     if (!employees.length) {
       return;
     }
@@ -195,7 +214,7 @@ export default function AdminDashboard() {
         {IS_MOCK_MODE ? (
           <p className="hint-text">
             {IS_SHARED_MOCK_MODE
-              ? "Shared prototype mode: everyone sees the same events and balances."
+              ? "Shared prototype mode: everyone sees the same events and balances (auto-refresh every 15 seconds)."
               : "Mock mode active: data is stored in this browser without balance/conflict validation."}
           </p>
         ) : null}

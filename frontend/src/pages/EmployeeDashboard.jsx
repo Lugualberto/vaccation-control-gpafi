@@ -130,6 +130,23 @@ export default function EmployeeDashboard() {
     loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      loadData();
+    }, 15000);
+
+    const handleFocus = () => {
+      loadData();
+    };
+
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [loadData]);
+
   const handleSelectSlot = ({ start, end }) => {
     const range = normalizeSelectionRange(start, end);
     setSelectedRange(range);
@@ -231,7 +248,7 @@ export default function EmployeeDashboard() {
         {IS_MOCK_MODE ? (
           <p className="hint-text">
             {IS_SHARED_MOCK_MODE
-              ? "Shared prototype mode: balances and events are synchronized for all users."
+              ? "Shared prototype mode: balances and events are synchronized for all users (auto-refresh every 15 seconds)."
               : "Mock mode active: balances and events are stored locally in this browser."}
           </p>
         ) : null}
