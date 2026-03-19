@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   approveVacation,
   getEmployees,
@@ -6,7 +6,7 @@ import {
   rejectVacation,
 } from "../api/client";
 import PendingRequestsTable from "../components/PendingRequestsTable";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../contexts/useAuth";
 import { Calendar, formats, localizer, toCalendarEvent } from "../utils/calendar";
 
 function eventStyleGetter() {
@@ -38,51 +38,51 @@ export default function AdminDashboard() {
     [approvedVacations]
   );
 
-  async function loadEmployees() {
+  const loadEmployees = useCallback(async () => {
     const result = await getEmployees();
     setEmployees(result);
-  }
+  }, []);
 
-  async function loadPending() {
+  const loadPending = useCallback(async (activeFilters = {}) => {
     setLoadingPending(true);
     setError("");
     try {
       const data = await listVacations({
         status: "PENDING",
-        employeeId: filters.employeeId || undefined,
-        from: filters.from || undefined,
-        to: filters.to || undefined,
+        employeeId: activeFilters.employeeId || undefined,
+        from: activeFilters.from || undefined,
+        to: activeFilters.to || undefined,
       });
       setPendingRequests(data);
-    } catch (requestError) {
+    } catch {
       setError("Erro ao carregar solicitações pendentes.");
     } finally {
       setLoadingPending(false);
     }
-  }
+  }, []);
 
-  async function loadApprovedCalendar() {
+  const loadApprovedCalendar = useCallback(async () => {
     try {
       const data = await listVacations({ status: "APPROVED" });
       setApprovedVacations(data);
     } catch {
       setError("Erro ao carregar calendário da equipe.");
     }
-  }
+  }, []);
 
   useEffect(() => {
     Promise.all([loadEmployees(), loadPending(), loadApprovedCalendar()]);
-  }, []);
+  }, [loadEmployees, loadPending, loadApprovedCalendar]);
 
   const handleApplyFilters = async (event) => {
     event.preventDefault();
-    await loadPending();
+    await loadPending(filters);
   };
 
   const handleApprove = async (request) => {
     try {
       await approveVacation(request.ID || request.id, user.ID || user.id);
-      await Promise.all([loadPending(), loadApprovedCalendar()]);
+      await Promise.all([loadPending(filters), loadApprovedCalendar()]);
     } catch (requestError) {
       const apiMessage = requestError?.response?.data?.message;
       setError(apiMessage || "Falha ao aprovar solicitação.");
@@ -93,7 +93,7 @@ export default function AdminDashboard() {
     const reason = window.prompt("Motivo da reprovação (opcional):", "");
     try {
       await rejectVacation(request.ID || request.id, user.ID || user.id, reason || "");
-      await Promise.all([loadPending(), loadApprovedCalendar()]);
+      await Promise.all([loadPending(filters), loadApprovedCalendar()]);
     } catch (requestError) {
       const apiMessage = requestError?.response?.data?.message;
       setError(apiMessage || "Falha ao reprovar solicitação.");

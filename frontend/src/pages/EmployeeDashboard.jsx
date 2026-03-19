@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Calendar, formats, localizer, toCalendarEvent } from "../utils/calendar";
 import {
   createVacation,
@@ -6,7 +6,7 @@ import {
   getEmployeeVacations,
 } from "../api/client";
 import VacationRequestModal from "../components/VacationRequestModal";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../contexts/useAuth";
 
 function normalizeSelectionRange(start, end) {
   const normalizedStart = new Date(start);
@@ -51,7 +51,7 @@ export default function EmployeeDashboard() {
 
   const events = useMemo(() => vacations.map(toCalendarEvent), [vacations]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!user) return;
 
     setLoading(true);
@@ -63,16 +63,16 @@ export default function EmployeeDashboard() {
       ]);
       setBalance(balanceResult);
       setVacations(vacationsResult);
-    } catch (requestError) {
+    } catch {
       setError("Falha ao carregar dashboard. Verifique backend e saldo do ano atual.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, currentYear]);
 
   useEffect(() => {
     loadData();
-  }, [user]);
+  }, [loadData]);
 
   const handleSelectSlot = ({ start, end }) => {
     const range = normalizeSelectionRange(start, end);

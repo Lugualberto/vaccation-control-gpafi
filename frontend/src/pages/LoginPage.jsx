@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getEmployees } from "../api/client";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../contexts/useAuth";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -31,7 +31,7 @@ export default function LoginPage() {
         if (response.length) {
           setSelectedId(String(response[0].ID || response[0].id));
         }
-      } catch (requestError) {
+      } catch {
         setError("Não foi possível carregar usuários. Verifique o backend.");
       } finally {
         setLoading(false);

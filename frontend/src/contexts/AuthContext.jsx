@@ -1,6 +1,5 @@
-import { createContext, useContext, useMemo, useState } from "react";
-
-const AuthContext = createContext(null);
+import { useMemo, useState } from "react";
+import { AuthContext } from "./authContextObject";
 const STORAGE_KEY = "vacation_app_user";
 
 function getInitialUser() {
@@ -36,12 +35,4 @@ export function AuthProvider({ children }) {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth deve ser usado dentro de AuthProvider.");
-  }
-  return context;
 }
