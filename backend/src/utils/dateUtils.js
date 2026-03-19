@@ -8,7 +8,7 @@ function parseIsoDate(dateString) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function calculateCalendarDays(startDateString, endDateString) {
+function validateDateRange(startDateString, endDateString) {
   const startDate = parseIsoDate(startDateString);
   const endDate = parseIsoDate(endDateString);
 
@@ -20,11 +20,26 @@ function calculateCalendarDays(startDateString, endDateString) {
     throw new Error("A data final deve ser maior ou igual a data inicial.");
   }
 
-  const millisecondsPerDay = 1000 * 60 * 60 * 24;
-  return Math.floor((endDate - startDate) / millisecondsPerDay) + 1;
+  return { startDate, endDate };
+}
+
+function calculateBusinessDays(startDateString, endDateString) {
+  const { startDate, endDate } = validateDateRange(startDateString, endDateString);
+  let count = 0;
+  const cursor = new Date(startDate);
+
+  while (cursor <= endDate) {
+    const day = cursor.getUTCDay();
+    if (day !== 0 && day !== 6) {
+      count += 1;
+    }
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  return count;
 }
 
 module.exports = {
-  calculateCalendarDays,
+  calculateBusinessDays,
   parseIsoDate,
 };

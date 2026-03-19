@@ -37,8 +37,15 @@ API base: `http://localhost:3000/api`
 - `GET /api/employees`
 - `GET /api/employees/:id`
 - `GET /api/employees/:id/balance/:year`
+- `PUT /api/employees/:id/balance/:year` (admin ajusta total/usado)
 - `GET /api/employees/:id/vacations`
 - `GET /api/vacations?status=PENDING&employeeId=1&from=2026-01-01&to=2026-12-31`
 - `POST /api/vacations`
 - `PUT /api/vacations/:id/approve`
 - `PUT /api/vacations/:id/reject`
+
+## Regras de negocio implementadas
+
+- valida saldo suficiente antes da solicitacao e no momento da aprovacao
+- bloqueia sobreposicao com periodos ja aprovados do mesmo colaborador
+- calcula `requested_days` em **dias uteis** (segunda a sexta)

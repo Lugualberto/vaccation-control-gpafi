@@ -1,7 +1,7 @@
 const oracledb = require("oracledb");
 const { getConnection } = require("../config/db");
 const { AppError } = require("../utils/errors");
-const { calculateCalendarDays, parseIsoDate } = require("../utils/dateUtils");
+const { calculateBusinessDays, parseIsoDate } = require("../utils/dateUtils");
 
 async function ensureEmployeeExists(connection, employeeId) {
   const result = await connection.execute(
@@ -90,7 +90,13 @@ async function createVacationRequest(payload) {
     );
   }
 
-  const requestedDays = calculateCalendarDays(startDate, endDate);
+  const requestedDays = calculateBusinessDays(startDate, endDate);
+  if (requestedDays <= 0) {
+    throw new AppError(
+      "Periodo invalido: selecione ao menos um dia util entre segunda e sexta-feira.",
+      400
+    );
+  }
   const connection = await getConnection();
 
   try {

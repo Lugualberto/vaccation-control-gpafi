@@ -4,6 +4,21 @@ function formatDate(date) {
   return date.toISOString().slice(0, 10);
 }
 
+function countBusinessDays(startDate, endDate) {
+  const cursor = new Date(startDate);
+  let count = 0;
+
+  while (cursor <= endDate) {
+    const day = cursor.getDay();
+    if (day !== 0 && day !== 6) {
+      count += 1;
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return count;
+}
+
 export default function VacationRequestModal({ open, selectedRange, onClose, onConfirm }) {
   const [justification, setJustification] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -12,9 +27,11 @@ export default function VacationRequestModal({ open, selectedRange, onClose, onC
     if (!selectedRange) {
       return null;
     }
+    const businessDays = countBusinessDays(selectedRange.start, selectedRange.end);
     return {
       startDate: formatDate(selectedRange.start),
       endDate: formatDate(selectedRange.end),
+      businessDays,
     };
   }, [selectedRange]);
 
@@ -44,6 +61,9 @@ export default function VacationRequestModal({ open, selectedRange, onClose, onC
         <h3>Confirmar solicitação de férias</h3>
         <p>
           Período: <strong>{period.startDate}</strong> até <strong>{period.endDate}</strong>
+        </p>
+        <p>
+          Dias úteis estimados: <strong>{period.businessDays}</strong>
         </p>
         <form onSubmit={handleSubmit}>
           <label htmlFor="justification">Justificativa (opcional)</label>

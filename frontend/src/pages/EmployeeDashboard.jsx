@@ -126,7 +126,7 @@ export default function EmployeeDashboard() {
 
       <div className="card calendar-card">
         <h3>Solicitar férias no calendário</h3>
-        <p>Selecione um intervalo para abrir a confirmação.</p>
+        <p>Selecione um intervalo para abrir a confirmação (cálculo em dias úteis).</p>
         <Calendar
           localizer={localizer}
           culture="pt-BR"

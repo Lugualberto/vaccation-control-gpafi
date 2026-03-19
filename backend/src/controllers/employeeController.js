@@ -1,5 +1,6 @@
 const { getConnection } = require("../config/db");
 const { AppError } = require("../utils/errors");
+const { adjustEmployeeBalance } = require("../services/employeeService");
 
 async function listEmployees(req, res) {
   const connection = await getConnection();
@@ -105,9 +106,16 @@ async function getEmployeeVacations(req, res) {
   }
 }
 
+async function updateEmployeeBalance(req, res) {
+  const { id, year } = req.params;
+  const updated = await adjustEmployeeBalance(id, year, req.body);
+  res.json(updated);
+}
+
 module.exports = {
   listEmployees,
   getEmployeeById,
   getEmployeeBalance,
   getEmployeeVacations,
+  updateEmployeeBalance,
 };

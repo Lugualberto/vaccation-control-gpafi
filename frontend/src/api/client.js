@@ -22,6 +22,11 @@ export async function getEmployeeBalance(employeeId, year) {
   return data;
 }
 
+export async function updateEmployeeBalance(employeeId, year, payload) {
+  const { data } = await api.put(`/employees/${employeeId}/balance/${year}`, payload);
+  return data;
+}
+
 export async function getEmployeeVacations(employeeId, status) {
   const { data } = await api.get(`/employees/${employeeId}/vacations`, {
     params: status ? { status } : {},
