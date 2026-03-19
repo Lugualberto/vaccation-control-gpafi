@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   getCurrentUser,
-  login as loginRequest,
-  loginWithGoogleIdentity,
+  loginWithCorporateEmail as loginWithCorporateEmailRequest,
 } from "../api/client";
 import { AUTH_STORAGE_KEY } from "../constants/auth";
 import { AuthContext } from "./authContextObject";
@@ -52,18 +51,8 @@ export function AuthProvider({ children }) {
     () => ({
       user: auth.user,
       token: auth.token,
-      login: async ({ email, password }) => {
-        const session = await loginRequest(email, password);
-        const nextAuth = {
-          token: session.token,
-          user: session.user,
-        };
-        setAuth(nextAuth);
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextAuth));
-        return session.user;
-      },
-      loginWithGoogle: async (googleProfile) => {
-        const session = await loginWithGoogleIdentity(googleProfile);
+      loginWithCorporateEmail: async (email) => {
+        const session = await loginWithCorporateEmailRequest(email);
         const nextAuth = {
           token: session.token,
           user: session.user,

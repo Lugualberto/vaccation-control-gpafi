@@ -1,13 +1,12 @@
-import { useGoogleLogin } from "@react-oauth/google";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { CORPORATE_EMAIL_DOMAIN, IS_MOCK_MODE } from "../api/client";
 import { useAuth } from "../contexts/useAuth";
-
-const hasGoogleClientId = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { loginWithGoogle, user } = useAuth();
+  const { loginWithCorporateEmail, user } = useAuth();
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -21,59 +20,51 @@ export default function LoginPage() {
     }
   }, [navigate, user]);
 
-  const googleSignIn = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setLoading(true);
-      setError("");
-      try {
-        const profileResponse = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-          headers: {
-            Authorization: `Bearer ${tokenResponse.access_token}`,
-          },
-        });
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setError("");
 
-        if (!profileResponse.ok) {
-          throw new Error("Nao foi possivel obter o perfil do Google.");
-        }
-
-        const profile = await profileResponse.json();
-        const loggedUser = await loginWithGoogle(profile);
-
-        if ((loggedUser.role || loggedUser.ROLE) === "ADMIN") {
-          navigate("/admin");
-          return;
-        }
-        navigate("/employee");
-      } catch (requestError) {
-        setError(requestError?.message || "Falha no login com Google.");
-      } finally {
-        setLoading(false);
+    try {
+      const loggedUser = await loginWithCorporateEmail(email);
+      if ((loggedUser.role || loggedUser.ROLE) === "ADMIN") {
+        navigate("/admin");
+        return;
       }
-    },
-    onError: () => {
-      setError("Nao foi possivel autenticar com Google.");
-    },
-  });
+      navigate("/employee");
+    } catch (requestError) {
+      const apiMessage = requestError?.response?.data?.message;
+      setError(apiMessage || "Nao foi possivel autenticar com e-mail corporativo.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <section className="card login-card google-login-card">
+    <section className="card login-card corporate-login-card">
       <h2>Login</h2>
-      <p>Faça login para acessar o controle interno de férias e day offs.</p>
-      {error ? <p className="error-text">{error}</p> : null}
-
-      <button type="button" onClick={() => googleSignIn()} disabled={loading || !hasGoogleClientId}>
-        {loading ? "Conectando..." : "Entrar com Google"}
-      </button>
-      {!hasGoogleClientId ? (
-        <p className="error-text">
-          Configure <code>VITE_GOOGLE_CLIENT_ID</code> no arquivo <code>.env</code> para habilitar
-          o login com Google.
+      <p>Entre com seu e-mail corporativo para acessar o controle de férias e day offs.</p>
+      {IS_MOCK_MODE ? (
+        <p className="hint-text">
+          Nesta fase de protótipo, aceitamos e-mails do domínio @{CORPORATE_EMAIL_DOMAIN}.
         </p>
       ) : null}
+      {error ? <p className="error-text">{error}</p> : null}
 
-      <p className="hint-text">
-        Após autenticar, seu nome/e-mail do Google serão usados como identidade no sistema.
-      </p>
+      <form onSubmit={handleSubmit}>
+        <label htmlFor="corporateEmail">E-mail corporativo</label>
+        <input
+          id="corporateEmail"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder={`nome.sobrenome@${CORPORATE_EMAIL_DOMAIN}`}
+          required
+        />
+        <button type="submit" disabled={loading}>
+          {loading ? "Entrando..." : "Entrar com e-mail corporativo"}
+        </button>
+      </form>
     </section>
   );
 }

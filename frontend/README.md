@@ -12,7 +12,7 @@ Por padrao:
 
 ```env
 VITE_USE_MOCK_DATA=true
-VITE_GOOGLE_CLIENT_ID=seu_google_client_id.apps.googleusercontent.com
+VITE_CORPORATE_EMAIL_DOMAIN=nubank.com.br
 ```
 
 > A fase atual funciona totalmente sem Oracle/backend,
@@ -51,7 +51,7 @@ Integração principal:
 ## Funcionalidades da interface (fase atual)
 
 - tema roxo inspirado no Nu + branding atualizado
-- login com Google (Google Identity) para identificar usuario autenticado
+- login por e-mail corporativo para identificar usuario autenticado
 - dashboard do colaborador com:
   - hero em layout dividido com texto + ilustração lateral
   - inclusao e remocao de periodos no calendario
@@ -72,15 +72,14 @@ Integração principal:
 
 Observacao: a contagem exibida no modal considera **dias corridos** (apenas informativo).
 
-## Configuração do login Google (resumo)
+## Configuração do login por e-mail corporativo (resumo)
 
 Variável necessária:
 
-- `VITE_GOOGLE_CLIENT_ID`: Client ID OAuth Web criado no Google Cloud Console.
+- `VITE_CORPORATE_EMAIL_DOMAIN`: domínio corporativo aceito no login (ex.: `nubank.com.br`).
 
 Arquivos alterados para o fluxo:
 
-- `src/main.jsx` (provider do Google)
-- `src/pages/LoginPage.jsx` (botão "Entrar com Google")
+- `src/pages/LoginPage.jsx` (botão "Entrar com e-mail corporativo")
 - `src/contexts/AuthContext.jsx` (persistência do usuário autenticado)
-- `src/api/mockApi.js` e `src/api/client.js` (login local com perfil vindo do Google)
+- `src/api/mockApi.js` e `src/api/client.js` (login local com validação do domínio corporativo)

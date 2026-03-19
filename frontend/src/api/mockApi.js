@@ -2,6 +2,9 @@ import { AUTH_STORAGE_KEY } from "../constants/auth";
 import { BACKUP_BY_FIRST_NAME, normalizeFirstName } from "../constants/backups";
 
 const MOCK_DB_KEY = "vacation_app_mock_db";
+const CORPORATE_EMAIL_DOMAIN = String(
+  import.meta.env.VITE_CORPORATE_EMAIL_DOMAIN || "nubank.com.br"
+).toLowerCase();
 
 function mockError(status, message) {
   const error = new Error(message);
@@ -325,18 +328,30 @@ function getNextEmployeeId(db) {
   return db.users.reduce((max, item) => Math.max(max, Number(item.employeeId) || 0), 0) + 1;
 }
 
-function ensureUserForGoogleProfile(db, profile) {
-  const normalizedEmail = String(profile?.email || "").toLowerCase().trim();
-  const normalizedName = String(profile?.name || "").trim();
-  if (!normalizedEmail || !normalizedName) {
-    throw mockError(400, "Falha ao obter dados de perfil do Google.");
+function toTitleCaseName(email) {
+  const username = String(email || "").split("@")[0] || "";
+  const tokens = username.split(/[.\-_]/).filter(Boolean);
+  if (!tokens.length) {
+    return "Colaborador";
+  }
+  return tokens.map((token) => token.charAt(0).toUpperCase() + token.slice(1)).join(" ");
+}
+
+function ensureUserForCorporateEmail(db, email) {
+  const normalizedEmail = String(email || "").toLowerCase().trim();
+  if (!normalizedEmail) {
+    throw mockError(400, "Informe seu e-mail corporativo.");
+  }
+
+  if (!normalizedEmail.endsWith(`@${CORPORATE_EMAIL_DOMAIN}`)) {
+    throw mockError(
+      403,
+      `Use um e-mail corporativo @${CORPORATE_EMAIL_DOMAIN} para entrar.`
+    );
   }
 
   let user = db.users.find((item) => item.email.toLowerCase() === normalizedEmail);
   if (user) {
-    if (user.name !== normalizedName) {
-      user.name = normalizedName;
-    }
     return user;
   }
 
@@ -348,9 +363,9 @@ function ensureUserForGoogleProfile(db, profile) {
     userId: newUserId,
     employeeId: newEmployeeId,
     email: normalizedEmail,
-    password: "GOOGLE_AUTH_ONLY",
+    password: "CORPORATE_EMAIL_ONLY",
     role: isAdmin ? "ADMIN" : "EMPLOYEE",
-    name: normalizedName,
+    name: toTitleCaseName(normalizedEmail),
     chapter: "Controllership",
     hireDate: nowIso().slice(0, 10),
   };
@@ -365,29 +380,13 @@ function ensureUserForGoogleProfile(db, profile) {
   return user;
 }
 
-export async function mockLogin(email, password) {
+export async function mockLoginWithCorporateEmail(email) {
   const db = readDb();
-  const account = db.users.find(
-    (user) => user.email.toLowerCase() === String(email || "").toLowerCase()
-  );
-
-  if (!account || account.password !== password) {
-    throw mockError(401, "Credenciais invalidas.");
-  }
-
-  return {
-    token: `mock-token-${account.userId}-${Date.now()}`,
-    user: normalizeUser(account),
-  };
-}
-
-export async function mockLoginWithGoogleIdentity(profile) {
-  const db = readDb();
-  const account = ensureUserForGoogleProfile(db, profile);
+  const account = ensureUserForCorporateEmail(db, email);
   writeDb(db);
 
   return {
-    token: `mock-google-${account.userId}-${Date.now()}`,
+    token: `mock-corporate-${account.userId}-${Date.now()}`,
     user: normalizeUser(account),
   };
 }

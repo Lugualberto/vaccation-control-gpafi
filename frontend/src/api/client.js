@@ -7,20 +7,16 @@ import {
   mockGetEmployees,
   mockListVacationAuditLogs,
   mockListVacations,
-  mockLoginWithGoogleIdentity,
-  mockLogin,
+  mockLoginWithCorporateEmail,
   mockRemoveVacation,
   mockUpdateEmployeeBalance,
 } from "./mockApi";
 
 export const IS_MOCK_MODE = true;
+export const CORPORATE_EMAIL_DOMAIN = import.meta.env.VITE_CORPORATE_EMAIL_DOMAIN || "nubank.com.br";
 
-export async function login(email, password) {
-  return mockLogin(email, password);
-}
-
-export async function loginWithGoogleIdentity(profile) {
-  return mockLoginWithGoogleIdentity(profile);
+export async function loginWithCorporateEmail(email) {
+  return mockLoginWithCorporateEmail(email);
 }
 
 export async function getCurrentUser() {
