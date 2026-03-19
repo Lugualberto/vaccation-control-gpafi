@@ -25,9 +25,18 @@ export const formats = {
     )}`,
 };
 
+function parseCalendarDate(value) {
+  const rawValue = value ?? "";
+  if (typeof rawValue === "string" && /^\d{4}-\d{2}-\d{2}$/.test(rawValue)) {
+    const [year, month, day] = rawValue.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return new Date(rawValue);
+}
+
 export function toCalendarEvent(vacation) {
-  const start = new Date(vacation.START_DATE || vacation.start_date);
-  const endRaw = new Date(vacation.END_DATE || vacation.end_date);
+  const start = parseCalendarDate(vacation.START_DATE || vacation.start_date);
+  const endRaw = parseCalendarDate(vacation.END_DATE || vacation.end_date);
   const end = new Date(endRaw);
   end.setDate(end.getDate() + 1);
   const employeeName = vacation.EMPLOYEE_NAME || vacation.employee_name || "Teammate";

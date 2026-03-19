@@ -4,6 +4,14 @@ export default function PendingRequestsTable({
   onReject,
   loading = false,
 }) {
+  const toDateString = (value) => {
+    const date = new Date(value);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   if (loading) {
     return <p>Loading requests...</p>;
   }
@@ -30,8 +38,8 @@ export default function PendingRequestsTable({
           <tr key={request.ID || request.id}>
             <td>{request.ID || request.id}</td>
             <td>{request.EMPLOYEE_NAME || request.employee_name}</td>
-            <td>{new Date(request.START_DATE || request.start_date).toISOString().slice(0, 10)}</td>
-            <td>{new Date(request.END_DATE || request.end_date).toISOString().slice(0, 10)}</td>
+            <td>{toDateString(request.START_DATE || request.start_date)}</td>
+            <td>{toDateString(request.END_DATE || request.end_date)}</td>
             <td>{request.REQUESTED_DAYS || request.requested_days}</td>
             <td>{request.JUSTIFICATION || request.justification || "-"}</td>
             <td className="table-actions">

@@ -65,7 +65,7 @@ function getEventStyle(event, currentEmployeeId) {
 }
 
 function formatDate(value) {
-  return new Date(value).toISOString().slice(0, 10);
+  return format(new Date(value), "yyyy-MM-dd");
 }
 
 export default function EmployeeDashboard() {
@@ -199,10 +199,12 @@ export default function EmployeeDashboard() {
       return;
     }
 
+    const startDateLabel = formatDate(event.start);
+    const endDateLabel = formatDate(new Date(event.end.getTime() - 24 * 60 * 60 * 1000));
     const shouldDelete = window.confirm(
-      `Do you want to remove the event from ${formatDate(event.start)} to ${formatDate(
-        new Date(event.end.getTime() - 24 * 60 * 60 * 1000)
-      )}?`
+      startDateLabel === endDateLabel
+        ? `Do you want to remove the event on ${startDateLabel}?`
+        : `Do you want to remove the event from ${startDateLabel} to ${endDateLabel}?`
     );
     if (!shouldDelete) {
       return;

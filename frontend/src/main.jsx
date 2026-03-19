@@ -6,9 +6,11 @@ import App from "./App.jsx";
 import { AuthProvider } from "./contexts/AuthContext";
 import "./index.css";
 
+const routerBase = import.meta.env.BASE_URL || "/";
+
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={routerBase}>
       <AuthProvider>
         <App />
       </AuthProvider>

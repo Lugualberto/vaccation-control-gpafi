@@ -1,7 +1,8 @@
+import { format } from "date-fns";
 import { useMemo, useState } from "react";
 
 function formatDate(date) {
-  return date.toISOString().slice(0, 10);
+  return format(date, "yyyy-MM-dd");
 }
 
 function countCalendarDays(startDate, endDate) {
@@ -59,9 +60,15 @@ export default function VacationRequestModal({ open, selectedRange, onClose, onC
     <div className="modal-backdrop" role="presentation">
       <div className="modal">
         <h3>Confirm calendar event</h3>
-        <p>
-          Period: <strong>{period.startDate}</strong> to <strong>{period.endDate}</strong>
-        </p>
+        {period.startDate === period.endDate ? (
+          <p>
+            Date: <strong>{period.startDate}</strong>
+          </p>
+        ) : (
+          <p>
+            Period: <strong>{period.startDate}</strong> to <strong>{period.endDate}</strong>
+          </p>
+        )}
         <p>
           Estimated calendar days: <strong>{period.calendarDays}</strong>
         </p>
