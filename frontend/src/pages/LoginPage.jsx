@@ -1,3 +1,4 @@
+import { useGoogleLogin } from "@react-oauth/google";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { IS_MOCK_MODE } from "../api/client";
@@ -5,12 +6,11 @@ import { useAuth } from "../contexts/useAuth";
 
 const MOCK_AUTH_KEY = "vacation_app_auth";
 const MOCK_DB_KEY = "vacation_app_mock_db";
+const hasGoogleClientId = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login, user } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const { loginWithGoogle, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -24,46 +24,39 @@ export default function LoginPage() {
     }
   }, [navigate, user]);
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    setLoading(true);
-    setError("");
+  const googleSignIn = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setLoading(true);
+      setError("");
+      try {
+        const profileResponse = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: {
+            Authorization: `Bearer ${tokenResponse.access_token}`,
+          },
+        });
 
-    try {
-      const loggedUser = await login({ email, password });
-      if ((loggedUser.role || loggedUser.ROLE) === "ADMIN") {
-        navigate("/admin");
-        return;
+        if (!profileResponse.ok) {
+          throw new Error("Nao foi possivel obter o perfil do Google.");
+        }
+
+        const profile = await profileResponse.json();
+        const loggedUser = await loginWithGoogle(profile);
+
+        if ((loggedUser.role || loggedUser.ROLE) === "ADMIN") {
+          navigate("/admin");
+          return;
+        }
+        navigate("/employee");
+      } catch (requestError) {
+        setError(requestError?.message || "Falha no login com Google.");
+      } finally {
+        setLoading(false);
       }
-      navigate("/employee");
-    } catch (requestError) {
-      const apiMessage = requestError?.response?.data?.message;
-      setError(apiMessage || "Nao foi possivel autenticar com as credenciais informadas.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleQuickLogin = async (mockEmail) => {
-    setEmail(mockEmail);
-    setPassword("Nubank@123");
-    setLoading(true);
-    setError("");
-
-    try {
-      const loggedUser = await login({ email: mockEmail, password: "Nubank@123" });
-      if ((loggedUser.role || loggedUser.ROLE) === "ADMIN") {
-        navigate("/admin");
-        return;
-      }
-      navigate("/employee");
-    } catch (requestError) {
-      const apiMessage = requestError?.response?.data?.message;
-      setError(apiMessage || "Nao foi possivel autenticar no acesso rapido.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    onError: () => {
+      setError("Nao foi possivel autenticar com Google.");
+    },
+  });
 
   const handleResetMockData = () => {
     localStorage.removeItem(MOCK_AUTH_KEY);
@@ -72,63 +65,30 @@ export default function LoginPage() {
   };
 
   return (
-    <section className="card login-card">
+    <section className="card login-card google-login-card">
       <h2>Login</h2>
-      <p>Autentique-se com e-mail corporativo e senha.</p>
-      {IS_MOCK_MODE ? (
-        <p className="hint-text">
-          Modo de teste local ativo (sem Oracle). Usuario seed:
-          {" "}
-          luana.gualberto@nubank.com.br / Nubank@123
+      <p>Faça login para acessar o controle interno de férias e day offs.</p>
+      {error ? <p className="error-text">{error}</p> : null}
+
+      <button type="button" onClick={() => googleSignIn()} disabled={loading || !hasGoogleClientId}>
+        {loading ? "Conectando..." : "Entrar com Google"}
+      </button>
+      {!hasGoogleClientId ? (
+        <p className="error-text">
+          Configure <code>VITE_GOOGLE_CLIENT_ID</code> no arquivo <code>.env</code> para habilitar
+          o login com Google.
         </p>
       ) : null}
-      {error ? <p className="error-text">{error}</p> : null}
+
+      <p className="hint-text">
+        Após autenticar, seu nome/e-mail do Google serão usados como identidade no sistema.
+      </p>
+
       {IS_MOCK_MODE ? (
-        <div className="quick-login-actions">
-          <button
-            type="button"
-            className="ghost"
-            onClick={() => handleQuickLogin("luana.gualberto@nubank.com.br")}
-            disabled={loading}
-          >
-            Entrar como Luana (Admin)
-          </button>
-          <button
-            type="button"
-            className="ghost"
-            onClick={() => handleQuickLogin("rafael.oliveira@nubank.com.br")}
-            disabled={loading}
-          >
-            Entrar como Rafael (Colaborador)
-          </button>
-          <button type="button" className="ghost" onClick={handleResetMockData} disabled={loading}>
-            Resetar dados de teste
-          </button>
-        </div>
-      ) : null}
-      <form onSubmit={handleSubmit}>
-        <label htmlFor="email">E-mail</label>
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder="nome.sobrenome@empresa.com"
-          required
-        />
-        <label htmlFor="password">Senha</label>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          placeholder="********"
-          required
-        />
-        <button type="submit" disabled={loading}>
-          {loading ? "Entrando..." : "Entrar"}
+        <button type="button" className="ghost" onClick={handleResetMockData} disabled={loading}>
+          Resetar dados de teste
         </button>
-      </form>
+      ) : null}
     </section>
   );
 }

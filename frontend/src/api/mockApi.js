@@ -317,6 +317,54 @@ function parseFilterDate(value) {
   return date;
 }
 
+function getNextUserId(db) {
+  return db.users.reduce((max, item) => Math.max(max, Number(item.userId) || 0), 0) + 1;
+}
+
+function getNextEmployeeId(db) {
+  return db.users.reduce((max, item) => Math.max(max, Number(item.employeeId) || 0), 0) + 1;
+}
+
+function ensureUserForGoogleProfile(db, profile) {
+  const normalizedEmail = String(profile?.email || "").toLowerCase().trim();
+  const normalizedName = String(profile?.name || "").trim();
+  if (!normalizedEmail || !normalizedName) {
+    throw mockError(400, "Falha ao obter dados de perfil do Google.");
+  }
+
+  let user = db.users.find((item) => item.email.toLowerCase() === normalizedEmail);
+  if (user) {
+    if (user.name !== normalizedName) {
+      user.name = normalizedName;
+    }
+    return user;
+  }
+
+  const newEmployeeId = getNextEmployeeId(db);
+  const newUserId = getNextUserId(db);
+  const isAdmin = normalizedEmail === "luana.gualberto@nubank.com.br";
+
+  user = {
+    userId: newUserId,
+    employeeId: newEmployeeId,
+    email: normalizedEmail,
+    password: "GOOGLE_AUTH_ONLY",
+    role: isAdmin ? "ADMIN" : "EMPLOYEE",
+    name: normalizedName,
+    chapter: "Controllership",
+    hireDate: nowIso().slice(0, 10),
+  };
+  db.users.push(user);
+  db.balances.push({
+    employee_id: newEmployeeId,
+    year: new Date().getFullYear(),
+    total_days: 30,
+    used_days: 0,
+  });
+
+  return user;
+}
+
 export async function mockLogin(email, password) {
   const db = readDb();
   const account = db.users.find(
@@ -329,6 +377,17 @@ export async function mockLogin(email, password) {
 
   return {
     token: `mock-token-${account.userId}-${Date.now()}`,
+    user: normalizeUser(account),
+  };
+}
+
+export async function mockLoginWithGoogleIdentity(profile) {
+  const db = readDb();
+  const account = ensureUserForGoogleProfile(db, profile);
+  writeDb(db);
+
+  return {
+    token: `mock-google-${account.userId}-${Date.now()}`,
     user: normalizeUser(account),
   };
 }

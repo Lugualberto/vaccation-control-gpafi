@@ -7,6 +7,7 @@ import {
   mockGetEmployees,
   mockListVacationAuditLogs,
   mockListVacations,
+  mockLoginWithGoogleIdentity,
   mockLogin,
   mockRemoveVacation,
   mockUpdateEmployeeBalance,
@@ -16,6 +17,10 @@ export const IS_MOCK_MODE = true;
 
 export async function login(email, password) {
   return mockLogin(email, password);
+}
+
+export async function loginWithGoogleIdentity(profile) {
+  return mockLoginWithGoogleIdentity(profile);
 }
 
 export async function getCurrentUser() {

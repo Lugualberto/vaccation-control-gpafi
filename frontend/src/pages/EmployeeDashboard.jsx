@@ -17,7 +17,7 @@ import { useAuth } from "../contexts/useAuth";
 import { Calendar, formats, localizer, toCalendarEvent } from "../utils/calendar";
 
 const HERO_IMAGE =
-  "https://ih1.redbubble.net/image.2082029861.5541/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg";
+  "https://pxcdn.0223.com.ar/f/082025/1754066789893.webp?cw=748&ch=420&cma=1&extw=jpg";
 
 function normalizeSelectionRange(start, end) {
   const normalizedStart = new Date(start);
@@ -204,8 +204,8 @@ export default function EmployeeDashboard() {
 
   return (
     <section className="dashboard-grid">
-      <section className="hero-banner" style={{ backgroundImage: `url(${HERO_IMAGE})` }}>
-        <div className="hero-overlay">
+      <section className="hero-split">
+        <div className="hero-copy">
           <h2>Controle de Férias da Equipe e Daysoffs 🌴</h2>
           <p>
             Chegou a hora que todo mundo mais gosta no trabalho: férias (rsrs). Depois de tanto
@@ -219,6 +219,9 @@ export default function EmployeeDashboard() {
               este controle é só interno: você ainda precisa agendar tudo formalmente no Oracle.
             </li>
           </ul>
+        </div>
+        <div className="hero-illustration">
+          <img src={HERO_IMAGE} alt="Mafalda relaxando na praia" loading="eager" />
         </div>
       </section>
 

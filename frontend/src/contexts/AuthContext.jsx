@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { getCurrentUser, login as loginRequest } from "../api/client";
+import {
+  getCurrentUser,
+  login as loginRequest,
+  loginWithGoogleIdentity,
+} from "../api/client";
 import { AUTH_STORAGE_KEY } from "../constants/auth";
 import { AuthContext } from "./authContextObject";
 
@@ -50,6 +54,16 @@ export function AuthProvider({ children }) {
       token: auth.token,
       login: async ({ email, password }) => {
         const session = await loginRequest(email, password);
+        const nextAuth = {
+          token: session.token,
+          user: session.user,
+        };
+        setAuth(nextAuth);
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextAuth));
+        return session.user;
+      },
+      loginWithGoogle: async (googleProfile) => {
+        const session = await loginWithGoogleIdentity(googleProfile);
         const nextAuth = {
           token: session.token,
           user: session.user,

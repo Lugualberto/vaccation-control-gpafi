@@ -12,6 +12,7 @@ Por padrao:
 
 ```env
 VITE_USE_MOCK_DATA=true
+VITE_GOOGLE_CLIENT_ID=seu_google_client_id.apps.googleusercontent.com
 ```
 
 > A fase atual funciona totalmente sem Oracle/backend,
@@ -50,9 +51,9 @@ Integração principal:
 ## Funcionalidades da interface (fase atual)
 
 - tema roxo inspirado no Nu + branding atualizado
-- login de teste (mock) para validar interface sem dependencia do Oracle
+- login com Google (Google Identity) para identificar usuario autenticado
 - dashboard do colaborador com:
-  - hero/banner com instrucoes internas
+  - hero em layout dividido com texto + ilustração lateral
   - inclusao e remocao de periodos no calendario
   - selecao de tipo de evento (Ferias / Day Off)
   - validacao de conflito com backup (somente para Ferias)
@@ -71,7 +72,15 @@ Integração principal:
 
 Observacao: a contagem exibida no modal considera **dias corridos** (apenas informativo).
 
-## Credenciais mock para teste
+## Configuração do login Google (resumo)
 
-- `luana.gualberto@nubank.com.br` / `Nubank@123` (ADMIN)
-- `rafael.oliveira@nubank.com.br` / `Nubank@123` (EMPLOYEE)
+Variável necessária:
+
+- `VITE_GOOGLE_CLIENT_ID`: Client ID OAuth Web criado no Google Cloud Console.
+
+Arquivos alterados para o fluxo:
+
+- `src/main.jsx` (provider do Google)
+- `src/pages/LoginPage.jsx` (botão "Entrar com Google")
+- `src/contexts/AuthContext.jsx` (persistência do usuário autenticado)
+- `src/api/mockApi.js` e `src/api/client.js` (login local com perfil vindo do Google)
