@@ -54,13 +54,13 @@ function MonthCard({ monthDate, events }) {
     <article className="year-month-card">
       <h4>{format(monthDate, "MMMM yyyy")}</h4>
       <div className="year-weekdays">
-        <span>Dom</span>
-        <span>Seg</span>
-        <span>Ter</span>
-        <span>Qua</span>
-        <span>Qui</span>
-        <span>Sex</span>
-        <span>Sab</span>
+        <span>Sun</span>
+        <span>Mon</span>
+        <span>Tue</span>
+        <span>Wed</span>
+        <span>Thu</span>
+        <span>Fri</span>
+        <span>Sat</span>
       </div>
       <div className="year-grid">{cells}</div>
     </article>

@@ -119,7 +119,7 @@ export default function EmployeeDashboard() {
       setEventsData(vacationsResult);
       setAuditLogs(auditResult);
     } catch {
-      setError("Falha ao carregar dashboard. Verifique os dados de teste.");
+      setError("Failed to load dashboard. Check your local test data.");
     } finally {
       setLoading(false);
     }
@@ -148,7 +148,7 @@ export default function EmployeeDashboard() {
       await loadData();
     } catch (requestError) {
       const apiMessage = requestError?.response?.data?.message;
-      setError(apiMessage || "Não foi possível registrar o período.");
+      setError(apiMessage || "Could not save this period.");
       throw requestError;
     }
   };
@@ -165,10 +165,10 @@ export default function EmployeeDashboard() {
         used_days: Number(balanceForm.usedDays),
       });
       setBalance(updated);
-      setBalanceMessage("Saldo manual atualizado para o período aquisitivo atual.");
+      setBalanceMessage("Manual balance updated for the current accrual period.");
     } catch (requestError) {
       const apiMessage = requestError?.response?.data?.message;
-      setError(apiMessage || "Não foi possível atualizar seu saldo manual.");
+      setError(apiMessage || "Could not update your manual balance.");
     } finally {
       setSavingBalance(false);
     }
@@ -177,12 +177,12 @@ export default function EmployeeDashboard() {
   const handleSelectEvent = async (event) => {
     const isOwnVacation = Number(event.employeeId) === Number(employeeId);
     if (!isOwnVacation) {
-      setError("Você pode remover apenas os seus próprios períodos.");
+      setError("You can only remove your own events.");
       return;
     }
 
     const shouldDelete = window.confirm(
-      `Deseja remover do calendário o período ${formatDate(event.start)} a ${formatDate(
+      `Do you want to remove the event from ${formatDate(event.start)} to ${formatDate(
         new Date(event.end.getTime() - 24 * 60 * 60 * 1000)
       )}?`
     );
@@ -195,7 +195,7 @@ export default function EmployeeDashboard() {
       await loadData();
     } catch (requestError) {
       const apiMessage = requestError?.response?.data?.message;
-      setError(apiMessage || "Não foi possível remover esse período.");
+      setError(apiMessage || "Could not remove this event.");
     }
   };
 
@@ -206,57 +206,53 @@ export default function EmployeeDashboard() {
     <section className="dashboard-grid">
       <section className="hero-split">
         <div className="hero-copy">
-          <h2>Controle de Férias da Equipe e Daysoffs 🌴</h2>
+          <h2>Team Vacation and Day Off Control 🌴</h2>
           <p>
-            Chegou a hora que todo mundo mais gosta no trabalho: férias (rsrs). Depois de tanto
-            esforço e entrega, nada mais justo do que <strong>descansar</strong>.
+            Here comes everyone&apos;s favorite time at work: vacation (finally). After so much
+            effort and delivery, nothing is fairer than a <strong>break</strong>.
           </p>
-          <p>Aqui é o nosso controle interno de férias e day offs:</p>
+          <p>This is our internal vacation and day off control:</p>
           <ul>
-            <li>informe os períodos que você planeja tirar férias;</li>
-            <li>cuide para não bater com as férias do seu backup;</li>
+            <li>add the periods you plan to take as vacation;</li>
+            <li>avoid overlapping with your backup person&apos;s vacation;</li>
             <li>
-              este controle é só interno: você ainda precisa agendar tudo formalmente no Oracle.
+              this control is internal only: formal scheduling in Oracle is still required.
             </li>
           </ul>
         </div>
         <div className="hero-illustration">
-          <img src={HERO_IMAGE} alt="Mafalda relaxando na praia" loading="eager" />
+          <img src={HERO_IMAGE} alt="Mafalda relaxing at the beach" loading="eager" />
         </div>
       </section>
 
       <div className="card">
-        <h2>Dashboard do Colaborador</h2>
+        <h2>Employee Dashboard</h2>
         {IS_MOCK_MODE ? (
-          <p className="hint-text">
-            Modo de teste sem Oracle ativo: saldo e eventos salvos localmente no navegador.
-          </p>
+          <p className="hint-text">Mock mode active: balances and events are stored locally.</p>
         ) : null}
-        {loading ? <p>Carregando dados...</p> : null}
+        {loading ? <p>Loading data...</p> : null}
         {error ? <p className="error-text">{error}</p> : null}
         {balance ? (
           <div className="stats">
             <div>
               <strong>{balance.TOTAL_DAYS || balance.total_days}</strong>
-              <span>Total anual</span>
+              <span>Total annual</span>
             </div>
             <div>
               <strong>{balance.USED_DAYS || balance.used_days}</strong>
-              <span>Dias já gozados</span>
+              <span>Used days</span>
             </div>
             <div>
               <strong>{balance.REMAINING_DAYS || balance.remaining_days}</strong>
-              <span>Saldo disponível</span>
+              <span>Available balance</span>
             </div>
           </div>
         ) : null}
         <form className="manual-balance-form" onSubmit={handleManualBalanceSubmit}>
-          <h3>Período aquisitivo (manual)</h3>
-          <p className="hint-text">
-            Informe manualmente seu saldo nesta fase de protótipo para testar os fluxos.
-          </p>
+          <h3>Accrual period (manual)</h3>
+          <p className="hint-text">Set your balance manually in this prototype phase.</p>
           <label>
-            Total de dias no período
+            Total days in period
             <input
               type="number"
               min="0"
@@ -268,7 +264,7 @@ export default function EmployeeDashboard() {
             />
           </label>
           <label>
-            Dias já utilizados
+            Already used days
             <input
               type="number"
               min="0"
@@ -280,29 +276,28 @@ export default function EmployeeDashboard() {
             />
           </label>
           <button type="submit" disabled={savingBalance}>
-            {savingBalance ? "Salvando..." : "Salvar saldo manual"}
+            {savingBalance ? "Saving..." : "Save manual balance"}
           </button>
           {balanceMessage ? <p>{balanceMessage}</p> : null}
         </form>
       </div>
 
       <div className="card calendar-card">
-        <h3>Calendário da equipe</h3>
+        <h3>Team calendar</h3>
         <p>
-          Selecione um intervalo para incluir um evento. Clique em um evento para remover
-          (somente os seus).
+          Select a range to add an event. Click an event to remove it (your own events only).
         </p>
         <div className="backup-chip-row">
           <span className="backup-chip">
-            Meu backup: <strong>{backupInfo.backupDisplayName}</strong>
+            My backup: <strong>{backupInfo.backupDisplayName}</strong>
           </span>
           {backupInfo.backupFirstName ? (
             <span className="backup-chip subtle">
-              Regra ativa: férias não podem conflitar com {backupInfo.backupDisplayName}.
+              Active rule: vacations cannot overlap with {backupInfo.backupDisplayName}.
             </span>
           ) : (
             <span className="backup-chip subtle">
-              Regra de backup não aplicada para new hire nesta fase.
+              Backup rule is not applied for new hires in this phase.
             </span>
           )}
         </div>
@@ -312,14 +307,14 @@ export default function EmployeeDashboard() {
             className={calendarScope === "TEAM" ? "view-active" : "ghost"}
             onClick={() => setCalendarScope("TEAM")}
           >
-            Time inteiro
+            Whole team
           </button>
           <button
             type="button"
             className={calendarScope === "MINE" ? "view-active" : "ghost"}
             onClick={() => setCalendarScope("MINE")}
           >
-            Só minhas férias
+            Only my events
           </button>
         </div>
 
@@ -335,11 +330,11 @@ export default function EmployeeDashboard() {
         <div className="calendar-legend">
           <span className="legend-item">
             <span className="legend-dot own-vacation" />
-            Minhas férias
+            My vacations
           </span>
           <span className="legend-item">
             <span className="legend-dot team-vacation" />
-            Férias da equipe
+            Team vacations
           </span>
           <span className="legend-item">
             <span className="legend-dot dayoff" />
@@ -352,7 +347,7 @@ export default function EmployeeDashboard() {
         ) : (
           <Calendar
             localizer={localizer}
-            culture="pt-BR"
+            culture="en-US"
             events={visibleEvents}
             startAccessor="start"
             endAccessor="end"
@@ -373,21 +368,21 @@ export default function EmployeeDashboard() {
       </div>
 
       <div className="card">
-        <h3>Auditoria pessoal do calendário</h3>
-        {!auditLogs.length ? <p>Nenhum evento de auditoria registrado.</p> : null}
+        <h3>My calendar audit log</h3>
+        {!auditLogs.length ? <p>No audit events recorded yet.</p> : null}
         {auditLogs.length > 0 ? (
           <table className="requests-table">
             <thead>
               <tr>
-                <th>Data/Hora</th>
-                <th>Ação</th>
-                <th>Detalhes</th>
+                <th>Date/Time</th>
+                <th>Action</th>
+                <th>Details</th>
               </tr>
             </thead>
             <tbody>
               {auditLogs.map((log) => (
                 <tr key={log.ID || log.id}>
-                  <td>{new Date(log.ACTION_AT || log.action_at).toLocaleString("pt-BR")}</td>
+                  <td>{new Date(log.ACTION_AT || log.action_at).toLocaleString("en-US")}</td>
                   <td>{log.ACTION || log.action}</td>
                   <td>{log.DETAILS || log.details || "-"}</td>
                 </tr>

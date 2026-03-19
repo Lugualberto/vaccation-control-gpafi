@@ -34,7 +34,7 @@ export default function LoginPage() {
       navigate("/employee");
     } catch (requestError) {
       const apiMessage = requestError?.response?.data?.message;
-      setError(apiMessage || "Nao foi possivel autenticar com e-mail corporativo.");
+      setError(apiMessage || "Could not authenticate with your corporate email.");
     } finally {
       setLoading(false);
     }
@@ -43,26 +43,26 @@ export default function LoginPage() {
   return (
     <section className="card login-card corporate-login-card">
       <h2>Login</h2>
-      <p>Entre com seu e-mail corporativo para acessar o controle de férias e day offs.</p>
+      <p>Sign in with your corporate email to access vacation and day off control.</p>
       {IS_MOCK_MODE ? (
         <p className="hint-text">
-          Nesta fase de protótipo, aceitamos e-mails do domínio @{CORPORATE_EMAIL_DOMAIN}.
+          In this prototype phase, we accept emails from @{CORPORATE_EMAIL_DOMAIN}.
         </p>
       ) : null}
       {error ? <p className="error-text">{error}</p> : null}
 
       <form onSubmit={handleSubmit}>
-        <label htmlFor="corporateEmail">E-mail corporativo</label>
+        <label htmlFor="corporateEmail">Corporate email</label>
         <input
           id="corporateEmail"
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          placeholder={`nome.sobrenome@${CORPORATE_EMAIL_DOMAIN}`}
+          placeholder={`name.surname@${CORPORATE_EMAIL_DOMAIN}`}
           required
         />
         <button type="submit" disabled={loading}>
-          {loading ? "Entrando..." : "Entrar com e-mail corporativo"}
+          {loading ? "Signing in..." : "Sign in with corporate email"}
         </button>
       </form>
     </section>

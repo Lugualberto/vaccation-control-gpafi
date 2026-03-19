@@ -58,42 +58,42 @@ export default function VacationRequestModal({ open, selectedRange, onClose, onC
   return (
     <div className="modal-backdrop" role="presentation">
       <div className="modal">
-        <h3>Confirmar período no calendário</h3>
+        <h3>Confirm calendar event</h3>
         <p>
-          Período: <strong>{period.startDate}</strong> até <strong>{period.endDate}</strong>
+          Period: <strong>{period.startDate}</strong> to <strong>{period.endDate}</strong>
         </p>
         <p>
-          Dias corridos estimados: <strong>{period.calendarDays}</strong>
+          Estimated calendar days: <strong>{period.calendarDays}</strong>
         </p>
         <form onSubmit={handleSubmit}>
-          <label htmlFor="eventType">Tipo do evento</label>
+          <label htmlFor="eventType">Event type</label>
           <select
             id="eventType"
             value={eventType}
             onChange={(event) => setEventType(event.target.value)}
           >
-            <option value="VACATION">Férias</option>
+            <option value="VACATION">Vacation</option>
             <option value="DAY_OFF">Day Off</option>
           </select>
           {eventType === "DAY_OFF" ? (
             <p className="hint-text">
-              Day Off não usa saldo nesta fase e pode ser marcado livremente.
+              Day Off does not consume vacation balance in this phase.
             </p>
           ) : null}
-          <label htmlFor="justification">Justificativa (opcional)</label>
+          <label htmlFor="justification">Notes (optional)</label>
           <textarea
             id="justification"
             rows={4}
             value={justification}
             onChange={(event) => setJustification(event.target.value)}
-            placeholder="Ex.: férias escolares da família"
+            placeholder="Ex.: family trip"
           />
           <div className="modal-actions">
             <button type="button" className="ghost" onClick={onClose} disabled={submitting}>
-              Cancelar
+              Cancel
             </button>
             <button type="submit" disabled={submitting}>
-              {submitting ? "Enviando..." : "Confirmar pedido"}
+              {submitting ? "Saving..." : "Confirm"}
             </button>
           </div>
         </form>

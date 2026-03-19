@@ -79,7 +79,7 @@ export default function AdminDashboard() {
       });
       setApprovedVacations(data);
     } catch {
-      setError("Erro ao carregar calendario da equipe.");
+      setError("Failed to load team calendar.");
     } finally {
       setLoadingCalendar(false);
     }
@@ -94,7 +94,7 @@ export default function AdminDashboard() {
       });
       setAuditLogs(data);
     } catch {
-      setError("Erro ao carregar auditoria de calendario.");
+      setError("Failed to load calendar audit logs.");
     }
   }, []);
 
@@ -119,11 +119,11 @@ export default function AdminDashboard() {
           usedDays: "0",
         }));
         setBalanceMessage(
-          "Saldo nao encontrado para esse ano. Voce pode salvar para criar um novo saldo."
+          "No balance found for this year. Save to create a new balance record."
         );
         return;
       }
-      setError("Erro ao carregar saldo para ajuste.");
+      setError("Failed to load balance for adjustment.");
     }
   }, []);
 
@@ -176,11 +176,11 @@ export default function AdminDashboard() {
         usedDays: String(updated.USED_DAYS || updated.used_days),
       }));
       setBalanceMessage(
-        `Saldo atualizado. Disponivel: ${updated.REMAINING_DAYS || updated.remaining_days} dias.`
+        `Balance updated. Available: ${updated.REMAINING_DAYS || updated.remaining_days} days.`
       );
     } catch (requestError) {
       const apiMessage = requestError?.response?.data?.message;
-      setError(apiMessage || "Falha ao ajustar saldo.");
+      setError(apiMessage || "Failed to adjust balance.");
     } finally {
       setSavingBalance(false);
     }
@@ -189,23 +189,22 @@ export default function AdminDashboard() {
   return (
     <section className="dashboard-grid">
       <div className="card">
-        <h2>Dashboard do Administrador</h2>
-        <p>Visualize o calendario da equipe, auditoria e ajuste saldos anuais.</p>
+        <h2>Admin Dashboard</h2>
+        <p>View team calendar, audit logs, and adjust annual balances.</p>
         {IS_MOCK_MODE ? (
           <p className="hint-text">
-            Modo de teste sem Oracle ativo: os dados estao sendo persistidos no navegador, sem
-            validacao de conflito/saldo.
+            Mock mode active: data is stored in the browser without balance/conflict validation.
           </p>
         ) : null}
-        <p className="hint-text">Sessao: {user?.email || user?.EMAIL}</p>
+        <p className="hint-text">Session: {user?.email || user?.EMAIL}</p>
         {error ? <p className="error-text">{error}</p> : null}
       </div>
 
       <div className="card">
-        <h3>Ajuste de saldo anual</h3>
+        <h3>Annual balance adjustment</h3>
         <form className="balance-form" onSubmit={handleAdjustBalance}>
           <label>
-            Colaborador
+            Employee
             <select
               value={balanceForm.employeeId}
               onChange={(event) =>
@@ -213,7 +212,7 @@ export default function AdminDashboard() {
               }
             >
               <option value="" disabled>
-                Selecione
+                Select
               </option>
               {employees.map((employee) => (
                 <option key={employee.ID || employee.id} value={employee.ID || employee.id}>
@@ -223,7 +222,7 @@ export default function AdminDashboard() {
             </select>
           </label>
           <label>
-            Ano
+            Year
             <input
               type="number"
               min="2000"
@@ -235,7 +234,7 @@ export default function AdminDashboard() {
             />
           </label>
           <label>
-            Total de dias
+            Total days
             <input
               type="number"
               min="0"
@@ -247,7 +246,7 @@ export default function AdminDashboard() {
             />
           </label>
           <label>
-            Dias usados
+            Used days
             <input
               type="number"
               min="0"
@@ -264,10 +263,10 @@ export default function AdminDashboard() {
               className="ghost"
               onClick={() => loadBalanceSnapshot(balanceForm.employeeId, balanceForm.year)}
             >
-              Recarregar saldo
+              Reload balance
             </button>
             <button type="submit" disabled={savingBalance}>
-              {savingBalance ? "Salvando..." : "Salvar ajuste"}
+              {savingBalance ? "Saving..." : "Save adjustment"}
             </button>
           </div>
         </form>
@@ -275,17 +274,17 @@ export default function AdminDashboard() {
       </div>
 
       <div className="card">
-        <h3>Filtros do calendario e auditoria</h3>
+        <h3>Calendar and audit filters</h3>
         <form className="filters" onSubmit={handleApplyCalendarFilters}>
           <label>
-            Colaborador
+            Employee
             <select
               value={calendarFilters.employeeId}
               onChange={(event) =>
                 setCalendarFilters((prev) => ({ ...prev, employeeId: event.target.value }))
               }
             >
-              <option value="">Todos</option>
+              <option value="">All</option>
               {employees.map((employee) => (
                 <option key={employee.ID || employee.id} value={employee.ID || employee.id}>
                   {employee.NAME || employee.name}
@@ -294,7 +293,7 @@ export default function AdminDashboard() {
             </select>
           </label>
           <label>
-            De
+            From
             <input
               type="date"
               value={calendarFilters.from}
@@ -304,7 +303,7 @@ export default function AdminDashboard() {
             />
           </label>
           <label>
-            Ate
+            To
             <input
               type="date"
               value={calendarFilters.to}
@@ -314,13 +313,13 @@ export default function AdminDashboard() {
             />
           </label>
           <button type="submit" disabled={loadingCalendar}>
-            {loadingCalendar ? "Aplicando..." : "Aplicar filtros"}
+            {loadingCalendar ? "Applying..." : "Apply filters"}
           </button>
         </form>
       </div>
 
       <div className="card calendar-card">
-        <h3>Calendario da equipe (ferias e day offs)</h3>
+        <h3>Team calendar (vacations and day offs)</h3>
         <CalendarControls
           activeView={calendarView}
           onViewChange={setCalendarView}
@@ -334,7 +333,7 @@ export default function AdminDashboard() {
         <div className="calendar-legend">
           <span className="legend-item">
             <span className="legend-dot team-vacation" />
-            Férias
+            Vacation
           </span>
           <span className="legend-item">
             <span className="legend-dot dayoff" />
@@ -346,7 +345,7 @@ export default function AdminDashboard() {
         ) : (
           <Calendar
             localizer={localizer}
-            culture="pt-BR"
+            culture="en-US"
             events={approvedEvents}
             startAccessor="start"
             endAccessor="end"
@@ -364,23 +363,23 @@ export default function AdminDashboard() {
       </div>
 
       <div className="card">
-        <h3>Auditoria de inclusoes/remocoes</h3>
-        {!auditLogs.length ? <p>Nenhum evento encontrado para os filtros atuais.</p> : null}
+        <h3>Inclusion/removal audit log</h3>
+        {!auditLogs.length ? <p>No events found for the current filters.</p> : null}
         {auditLogs.length > 0 ? (
           <table className="requests-table">
             <thead>
               <tr>
-                <th>Data/Hora</th>
-                <th>Colaborador</th>
-                <th>Acao</th>
-                <th>Executado por</th>
-                <th>Detalhes</th>
+                <th>Date/Time</th>
+                <th>Employee</th>
+                <th>Action</th>
+                <th>Performed by</th>
+                <th>Details</th>
               </tr>
             </thead>
             <tbody>
               {auditLogs.map((log) => (
                 <tr key={log.ID || log.id}>
-                  <td>{new Date(log.ACTION_AT || log.action_at).toLocaleString("pt-BR")}</td>
+                  <td>{new Date(log.ACTION_AT || log.action_at).toLocaleString("en-US")}</td>
                   <td>{log.EMPLOYEE_NAME || log.employee_name}</td>
                   <td>{log.ACTION || log.action}</td>
                   <td>{log.ACTOR_NAME || log.actor_name}</td>

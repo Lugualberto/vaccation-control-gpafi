@@ -1,9 +1,9 @@
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { enUS } from "date-fns/locale";
 
 const locales = {
-  "pt-BR": ptBR,
+  "en-US": enUS,
 };
 
 export const localizer = dateFnsLocalizer({
@@ -16,11 +16,11 @@ export const localizer = dateFnsLocalizer({
 
 export const formats = {
   monthHeaderFormat: "MMMM yyyy",
-  dayHeaderFormat: "EEEEEE, dd/MM",
+  dayHeaderFormat: "EEEEEE, MM/dd",
   dayRangeHeaderFormat: ({ start, end }, culture, localizerInstance) =>
-    `${localizerInstance.format(start, "dd/MM", culture)} - ${localizerInstance.format(
+    `${localizerInstance.format(start, "MM/dd", culture)} - ${localizerInstance.format(
       end,
-      "dd/MM",
+      "MM/dd",
       culture
     )}`,
 };
@@ -30,10 +30,10 @@ export function toCalendarEvent(vacation) {
   const endRaw = new Date(vacation.END_DATE || vacation.end_date);
   const end = new Date(endRaw);
   end.setDate(end.getDate() + 1);
-  const employeeName = vacation.EMPLOYEE_NAME || vacation.employee_name || "Colaborador";
+  const employeeName = vacation.EMPLOYEE_NAME || vacation.employee_name || "Teammate";
   const status = vacation.STATUS || vacation.status;
   const eventType = vacation.EVENT_TYPE || vacation.event_type || "VACATION";
-  const eventLabel = eventType === "DAY_OFF" ? "Day Off" : "Férias";
+  const eventLabel = eventType === "DAY_OFF" ? "Day Off" : "Vacation";
 
   return {
     id: vacation.ID || vacation.id,

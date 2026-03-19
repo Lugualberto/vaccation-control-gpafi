@@ -31,7 +31,7 @@ function countCalendarDays(startDateString, endDateString) {
   const start = parseDate(startDateString);
   const end = parseDate(endDateString);
   if (!start || !end || end < start) {
-    throw mockError(400, "Datas invalidas. Use YYYY-MM-DD e periodo valido.");
+    throw mockError(400, "Invalid dates. Use YYYY-MM-DD and a valid range.");
   }
 
   const millisecondsPerDay = 1000 * 60 * 60 * 24;
@@ -148,7 +148,7 @@ function buildDefaultDb() {
         requested_days: 5,
         status: "APPROVED",
         event_type: "VACATION",
-        justification: "Ferias escolares",
+        justification: "School vacation",
         created_at: nowIso(),
         updated_at: nowIso(),
       },
@@ -161,7 +161,7 @@ function buildDefaultDb() {
         requested_days: 6,
         status: "APPROVED",
         event_type: "VACATION",
-        justification: "Viagem em familia",
+        justification: "Family trip",
         created_at: nowIso(),
         updated_at: nowIso(),
       },
@@ -174,7 +174,7 @@ function buildDefaultDb() {
         requested_days: 1,
         status: "APPROVED",
         event_type: "DAY_OFF",
-        justification: "Compromisso pessoal",
+        justification: "Personal appointment",
         created_at: nowIso(),
         updated_at: nowIso(),
       },
@@ -188,7 +188,7 @@ function buildDefaultDb() {
         actor_user_id: 3,
         actor_name: "Bianca Alves",
         action: "CREATED",
-        details: "Tipo=Ferias; Periodo registrado no calendario",
+        details: "Type=Vacation; Period saved in calendar",
         action_at: nowIso(),
       },
       {
@@ -199,7 +199,7 @@ function buildDefaultDb() {
         actor_user_id: 6,
         actor_name: "Arturo Lima",
         action: "CREATED",
-        details: "Tipo=Ferias; Periodo registrado no calendario",
+        details: "Type=Vacation; Period saved in calendar",
         action_at: nowIso(),
       },
       {
@@ -210,7 +210,7 @@ function buildDefaultDb() {
         actor_user_id: 1,
         actor_name: "Luana Gualberto",
         action: "CREATED",
-        details: "Tipo=Day Off; Periodo registrado no calendario",
+        details: "Type=Day Off; Period saved in calendar",
         action_at: nowIso(),
       },
     ],
@@ -263,7 +263,7 @@ function getAuthState() {
 function getCurrentUserOrThrow() {
   const { user } = getAuthState();
   if (!user) {
-    throw mockError(401, "Usuario nao autenticado.");
+    throw mockError(401, "User is not authenticated.");
   }
   return user;
 }
@@ -315,7 +315,7 @@ function parseFilterDate(value) {
   if (!value) return null;
   const date = parseDate(value);
   if (!date) {
-    throw mockError(400, "Filtro de data invalido. Use YYYY-MM-DD.");
+    throw mockError(400, "Invalid date filter. Use YYYY-MM-DD.");
   }
   return date;
 }
@@ -332,7 +332,7 @@ function toTitleCaseName(email) {
   const username = String(email || "").split("@")[0] || "";
   const tokens = username.split(/[.\-_]/).filter(Boolean);
   if (!tokens.length) {
-    return "Colaborador";
+    return "Teammate";
   }
   return tokens.map((token) => token.charAt(0).toUpperCase() + token.slice(1)).join(" ");
 }
@@ -340,13 +340,13 @@ function toTitleCaseName(email) {
 function ensureUserForCorporateEmail(db, email) {
   const normalizedEmail = String(email || "").toLowerCase().trim();
   if (!normalizedEmail) {
-    throw mockError(400, "Informe seu e-mail corporativo.");
+    throw mockError(400, "Please provide your corporate email.");
   }
 
   if (!normalizedEmail.endsWith(`@${CORPORATE_EMAIL_DOMAIN}`)) {
     throw mockError(
       403,
-      `Use um e-mail corporativo @${CORPORATE_EMAIL_DOMAIN} para entrar.`
+      `Use a corporate email @${CORPORATE_EMAIL_DOMAIN} to sign in.`
     );
   }
 
@@ -426,13 +426,13 @@ export async function mockGetEmployees() {
 export async function mockGetEmployeeById(employeeId) {
   const actor = getCurrentUserOrThrow();
   if (!canAccessEmployee(actor, employeeId)) {
-    throw mockError(403, "Sem permissao para acessar este colaborador.");
+    throw mockError(403, "No permission to access this employee.");
   }
 
   const db = readDb();
   const found = db.users.find((item) => Number(item.employeeId) === Number(employeeId));
   if (!found) {
-    throw mockError(404, "Colaborador nao encontrado.");
+    throw mockError(404, "Employee not found.");
   }
 
   return {
@@ -447,7 +447,7 @@ export async function mockGetEmployeeById(employeeId) {
 export async function mockGetEmployeeBalance(employeeId, year) {
   const actor = getCurrentUserOrThrow();
   if (!canAccessEmployee(actor, employeeId)) {
-    throw mockError(403, "Sem permissao para consultar esse saldo.");
+    throw mockError(403, "No permission to view this balance.");
   }
 
   const db = readDb();
@@ -459,18 +459,18 @@ export async function mockGetEmployeeBalance(employeeId, year) {
 export async function mockUpdateEmployeeBalance(employeeId, year, payload) {
   const actor = getCurrentUserOrThrow();
   if (!canAccessEmployee(actor, employeeId)) {
-    throw mockError(403, "Sem permissao para ajustar esse saldo.");
+    throw mockError(403, "No permission to adjust this balance.");
   }
 
   const totalDays = Number(payload?.total_days);
   const usedDays = Number(payload?.used_days);
 
   if (Number.isNaN(totalDays) || Number.isNaN(usedDays)) {
-    throw mockError(400, "Informe total_days e used_days numericos.");
+    throw mockError(400, "Provide numeric total_days and used_days.");
   }
 
   if (totalDays < 0 || usedDays < 0) {
-    throw mockError(400, "Dias nao podem ser negativos.");
+    throw mockError(400, "Days cannot be negative.");
   }
 
   const db = readDb();
@@ -485,7 +485,7 @@ export async function mockUpdateEmployeeBalance(employeeId, year, payload) {
 export async function mockGetEmployeeVacations(employeeId, status) {
   const actor = getCurrentUserOrThrow();
   if (!canAccessEmployee(actor, employeeId)) {
-    throw mockError(403, "Sem permissao para consultar esse historico.");
+    throw mockError(403, "No permission to view this history.");
   }
 
   const db = readDb();
@@ -543,7 +543,7 @@ export async function mockListVacationAuditLogs(filters = {}) {
 
   if (employeeIdFilter) {
     if (actor.role !== "ADMIN" && Number(actor.employeeId) !== employeeIdFilter) {
-      throw mockError(403, "Sem permissao para consultar auditoria de outro colaborador.");
+      throw mockError(403, "No permission to view another employee's audit logs.");
     }
     result = result.filter((item) => Number(item.employee_id) === employeeIdFilter);
   }
@@ -576,16 +576,16 @@ export async function mockCreateVacation(payload) {
   const eventType = String(rawType).toUpperCase();
 
   if (!startDate || !endDate) {
-    throw mockError(400, "Campos obrigatorios: start_date e end_date.");
+    throw mockError(400, "Required fields: start_date and end_date.");
   }
   if (!["VACATION", "DAY_OFF"].includes(eventType)) {
-    throw mockError(400, "Tipo de evento invalido.");
+    throw mockError(400, "Invalid event type.");
   }
 
   const start = parseDate(startDate);
   const end = parseDate(endDate);
   if (!start || !end || end < start) {
-    throw mockError(400, "Datas invalidas para ferias.");
+    throw mockError(400, "Invalid vacation dates.");
   }
 
   const db = readDb();
@@ -616,7 +616,7 @@ export async function mockCreateVacation(payload) {
         if (hasConflict) {
           throw mockError(
             409,
-            `Este período conflita com as férias de ${backupUser.name}. Combine com a pessoa ou escolha outro período.`
+            `This period conflicts with ${backupUser.name}'s vacation. Align with them or choose another period.`
           );
         }
       }
@@ -627,7 +627,7 @@ export async function mockCreateVacation(payload) {
   const vacation = {
     id: db.counters.vacationId++,
     employee_id: employeeId,
-    employee_name: employee?.name || "Colaborador",
+    employee_name: employee?.name || "Teammate",
     start_date: startDate,
     end_date: endDate,
     requested_days: requestedDays,
@@ -643,11 +643,11 @@ export async function mockCreateVacation(payload) {
     id: db.counters.auditId++,
     vacation_request_id: vacation.id,
     employee_id: employeeId,
-    employee_name: employee?.name || "Colaborador",
+    employee_name: employee?.name || "Teammate",
     actor_user_id: actor.userId,
     actor_name: actor.name,
     action: "CREATED",
-    details: `Tipo=${eventType === "DAY_OFF" ? "Day Off" : "Ferias"}; Periodo ${startDate} a ${endDate}; dias_corridos=${requestedDays}`,
+    details: `Type=${eventType === "DAY_OFF" ? "Day Off" : "Vacation"}; Period ${startDate} to ${endDate}; calendar_days=${requestedDays}`,
     action_at: nowIso(),
   });
 
@@ -661,17 +661,17 @@ export async function mockRemoveVacation(vacationId) {
 
   const vacation = db.vacations.find((item) => Number(item.id) === Number(vacationId));
   if (!vacation) {
-    throw mockError(404, "Ferias nao encontradas.");
+    throw mockError(404, "Vacation not found.");
   }
 
   const canDelete =
     actor.role === "ADMIN" || Number(actor.employeeId) === Number(vacation.employee_id);
   if (!canDelete) {
-    throw mockError(403, "Sem permissao para remover este periodo.");
+    throw mockError(403, "No permission to remove this period.");
   }
 
   if (vacation.status !== "APPROVED") {
-    throw mockError(400, "Apenas ferias ativas podem ser removidas.");
+    throw mockError(400, "Only active vacations can be removed.");
   }
 
   vacation.status = "CANCELLED";
@@ -685,10 +685,10 @@ export async function mockRemoveVacation(vacationId) {
     actor_user_id: actor.userId,
     actor_name: actor.name,
     action: "DELETED",
-    details: `Tipo=${(vacation.event_type || "VACATION") === "DAY_OFF" ? "Day Off" : "Ferias"}; Periodo ${vacation.start_date} a ${vacation.end_date}; dias_corridos=${vacation.requested_days}`,
+    details: `Type=${(vacation.event_type || "VACATION") === "DAY_OFF" ? "Day Off" : "Vacation"}; Period ${vacation.start_date} to ${vacation.end_date}; calendar_days=${vacation.requested_days}`,
     action_at: nowIso(),
   });
 
   writeDb(db);
-  return { message: "Ferias removidas do calendario com sucesso." };
+  return { message: "Vacation removed from calendar successfully." };
 }

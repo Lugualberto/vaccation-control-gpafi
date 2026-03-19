@@ -5,11 +5,11 @@ export default function PendingRequestsTable({
   loading = false,
 }) {
   if (loading) {
-    return <p>Carregando solicitações...</p>;
+    return <p>Loading requests...</p>;
   }
 
   if (!requests.length) {
-    return <p>Nenhuma solicitação pendente para os filtros selecionados.</p>;
+    return <p>No pending requests for the selected filters.</p>;
   }
 
   return (
@@ -17,12 +17,12 @@ export default function PendingRequestsTable({
       <thead>
         <tr>
           <th>ID</th>
-          <th>Colaborador</th>
-          <th>Início</th>
-          <th>Fim</th>
-          <th>Dias</th>
-          <th>Justificativa</th>
-          <th>Ações</th>
+          <th>Employee</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Days</th>
+          <th>Notes</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -36,10 +36,10 @@ export default function PendingRequestsTable({
             <td>{request.JUSTIFICATION || request.justification || "-"}</td>
             <td className="table-actions">
               <button type="button" onClick={() => onApprove(request)}>
-                Aprovar
+                Approve
               </button>
               <button type="button" className="danger" onClick={() => onReject(request)}>
-                Reprovar
+                Reject
               </button>
             </td>
           </tr>
