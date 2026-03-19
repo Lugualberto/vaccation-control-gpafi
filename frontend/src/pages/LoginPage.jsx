@@ -1,11 +1,8 @@
 import { useGoogleLogin } from "@react-oauth/google";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { IS_MOCK_MODE } from "../api/client";
 import { useAuth } from "../contexts/useAuth";
 
-const MOCK_AUTH_KEY = "vacation_app_auth";
-const MOCK_DB_KEY = "vacation_app_mock_db";
 const hasGoogleClientId = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
 export default function LoginPage() {
@@ -58,12 +55,6 @@ export default function LoginPage() {
     },
   });
 
-  const handleResetMockData = () => {
-    localStorage.removeItem(MOCK_AUTH_KEY);
-    localStorage.removeItem(MOCK_DB_KEY);
-    window.location.reload();
-  };
-
   return (
     <section className="card login-card google-login-card">
       <h2>Login</h2>
@@ -83,12 +74,6 @@ export default function LoginPage() {
       <p className="hint-text">
         Após autenticar, seu nome/e-mail do Google serão usados como identidade no sistema.
       </p>
-
-      {IS_MOCK_MODE ? (
-        <button type="button" className="ghost" onClick={handleResetMockData} disabled={loading}>
-          Resetar dados de teste
-        </button>
-      ) : null}
     </section>
   );
 }
