@@ -58,6 +58,13 @@
   margin-top: 10px;
 }
 
+.quick-login-actions {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .stats {
   margin-top: 8px;
   display: grid;

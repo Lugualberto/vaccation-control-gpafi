@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { IS_MOCK_MODE } from "../api/client";
 import { useAuth } from "../contexts/useAuth";
 
+const MOCK_AUTH_KEY = "vacation_app_auth";
+const MOCK_DB_KEY = "vacation_app_mock_db";
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login, user } = useAuth();
@@ -41,6 +44,33 @@ export default function LoginPage() {
     }
   };
 
+  const handleQuickLogin = async (mockEmail) => {
+    setEmail(mockEmail);
+    setPassword("Nubank@123");
+    setLoading(true);
+    setError("");
+
+    try {
+      const loggedUser = await login({ email: mockEmail, password: "Nubank@123" });
+      if ((loggedUser.role || loggedUser.ROLE) === "ADMIN") {
+        navigate("/admin");
+        return;
+      }
+      navigate("/employee");
+    } catch (requestError) {
+      const apiMessage = requestError?.response?.data?.message;
+      setError(apiMessage || "Nao foi possivel autenticar no acesso rapido.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetMockData = () => {
+    localStorage.removeItem(MOCK_AUTH_KEY);
+    localStorage.removeItem(MOCK_DB_KEY);
+    window.location.reload();
+  };
+
   return (
     <section className="card login-card">
       <h2>Login</h2>
@@ -53,6 +83,29 @@ export default function LoginPage() {
         </p>
       ) : null}
       {error ? <p className="error-text">{error}</p> : null}
+      {IS_MOCK_MODE ? (
+        <div className="quick-login-actions">
+          <button
+            type="button"
+            className="ghost"
+            onClick={() => handleQuickLogin("luana.gualberto@nubank.com.br")}
+            disabled={loading}
+          >
+            Entrar como Luana (Admin)
+          </button>
+          <button
+            type="button"
+            className="ghost"
+            onClick={() => handleQuickLogin("rafael.oliveira@nubank.com.br")}
+            disabled={loading}
+          >
+            Entrar como Rafael (Colaborador)
+          </button>
+          <button type="button" className="ghost" onClick={handleResetMockData} disabled={loading}>
+            Resetar dados de teste
+          </button>
+        </div>
+      ) : null}
       <form onSubmit={handleSubmit}>
         <label htmlFor="email">E-mail</label>
         <input
