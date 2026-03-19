@@ -47,11 +47,11 @@ export default function LoginPage() {
       <p>Autentique-se com e-mail corporativo e senha.</p>
       {IS_MOCK_MODE ? (
         <p className="hint-text">
-          Modo de teste sem Oracle ativo. Usuario seed: luana.gualberto@nubank.com.br / Nubank@123
+          Modo de teste local ativo (sem Oracle). Usuario seed:
+          {" "}
+          luana.gualberto@nubank.com.br / Nubank@123
         </p>
-      ) : (
-        <p className="hint-text">Modo API real ativo (backend + Oracle).</p>
-      )}
+      ) : null}
       {error ? <p className="error-text">{error}</p> : null}
       <form onSubmit={handleSubmit}>
         <label htmlFor="email">E-mail</label>

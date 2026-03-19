@@ -11,13 +11,11 @@ cp .env.example .env
 Por padrao:
 
 ```env
-VITE_API_URL=http://localhost:3000/api
 VITE_USE_MOCK_DATA=true
 ```
 
-> Com `VITE_USE_MOCK_DATA=true` (padrao), a interface funciona sem Oracle/backend,
+> A fase atual funciona totalmente sem Oracle/backend,
 > com persistencia local no navegador (`localStorage`) para testes de UX.
-> Para usar API real, configure `VITE_USE_MOCK_DATA=false`.
 
 ## Rodar localmente
 
