@@ -234,17 +234,21 @@ export default function EmployeeDashboard() {
         <div className="hero-copy">
           <h2>Team Vacation and Day Off Control 🌴</h2>
           <p>
-            Chegou um dos momentos favoritos do trabalho: planejar férias e day offs.
+            One of the most desired moments at work has arrived: planning vacations and day offs
+            😄 🌴
           </p>
           <p>
-            Use este painel para combinar datas com o time, evitar conflitos com seu backup e
-            garantir que todo mundo consiga descansar sem deixar as entregas na mão.
+            After so much effort and delivery, nothing is fairer than a break
+          </p>
+          <p>
+            Use this dashboard to align dates with the team, avoid conflicts with your backup, and
+            make sure everyone can rest without compromising deliveries.
           </p>
           <ul>
-            <li>informe os períodos que você planeja tirar;</li>
-            <li>acompanhe o calendário do time para evitar sobreposições;</li>
+            <li>Add the periods you plan to take off;</li>
+            <li>Follow the team calendar to avoid overlaps with your backup;</li>
             <li>
-              este controle é interno: o lançamento oficial continua no fluxo corporativo.
+              This is an internal control: official registration in Oracle remains mandatory.
             </li>
           </ul>
         </div>
