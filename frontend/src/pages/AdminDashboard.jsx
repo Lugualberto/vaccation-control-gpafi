@@ -1,3 +1,4 @@
+import { addDays, addMonths, addWeeks, addYears, format } from "date-fns";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   getEmployeeBalance,
@@ -7,14 +8,24 @@ import {
   listVacations,
   updateEmployeeBalance,
 } from "../api/client";
+import CalendarControls from "../components/CalendarControls";
+import YearCalendarView from "../components/YearCalendarView";
 import { useAuth } from "../contexts/useAuth";
 import { Calendar, formats, localizer, toCalendarEvent } from "../utils/calendar";
 
-function eventStyleGetter() {
+function shiftDate(date, view, direction) {
+  if (view === "day") return addDays(date, direction);
+  if (view === "week") return addWeeks(date, direction);
+  if (view === "year") return addYears(date, direction);
+  return addMonths(date, direction);
+}
+
+function eventStyleGetter(event) {
+  const isDayOff = event.eventType === "DAY_OFF";
   return {
     style: {
-      backgroundColor: "#16a34a",
-      color: "#fff",
+      backgroundColor: isDayOff ? "#facc15" : "#8b5cf6",
+      color: isDayOff ? "#111827" : "#fff",
       borderRadius: "6px",
       border: "none",
     },
@@ -29,6 +40,8 @@ export default function AdminDashboard() {
   const [auditLogs, setAuditLogs] = useState([]);
   const [loadingCalendar, setLoadingCalendar] = useState(false);
   const [error, setError] = useState("");
+  const [calendarView, setCalendarView] = useState("month");
+  const [calendarDate, setCalendarDate] = useState(new Date());
   const [balanceMessage, setBalanceMessage] = useState("");
   const [savingBalance, setSavingBalance] = useState(false);
   const [calendarFilters, setCalendarFilters] = useState({
@@ -307,17 +320,47 @@ export default function AdminDashboard() {
       </div>
 
       <div className="card calendar-card">
-        <h3>Calendario da equipe (ferias programadas)</h3>
-        <Calendar
-          localizer={localizer}
-          culture="pt-BR"
-          events={approvedEvents}
-          startAccessor="start"
-          endAccessor="end"
-          style={{ height: 580 }}
-          formats={formats}
-          eventPropGetter={eventStyleGetter}
+        <h3>Calendario da equipe (ferias e day offs)</h3>
+        <CalendarControls
+          activeView={calendarView}
+          onViewChange={setCalendarView}
+          onPrev={() => setCalendarDate((prev) => shiftDate(prev, calendarView, -1))}
+          onNext={() => setCalendarDate((prev) => shiftDate(prev, calendarView, 1))}
+          onToday={() => setCalendarDate(new Date())}
         />
+        <p className="calendar-current-label">
+          {calendarView === "year" ? format(calendarDate, "yyyy") : format(calendarDate, "MMMM yyyy")}
+        </p>
+        <div className="calendar-legend">
+          <span className="legend-item">
+            <span className="legend-dot team-vacation" />
+            Férias
+          </span>
+          <span className="legend-item">
+            <span className="legend-dot dayoff" />
+            Day Off
+          </span>
+        </div>
+        {calendarView === "year" ? (
+          <YearCalendarView date={calendarDate} events={approvedEvents} />
+        ) : (
+          <Calendar
+            localizer={localizer}
+            culture="pt-BR"
+            events={approvedEvents}
+            startAccessor="start"
+            endAccessor="end"
+            style={{ height: 580 }}
+            toolbar={false}
+            date={calendarDate}
+            view={calendarView}
+            views={["month", "week", "day", "agenda"]}
+            onView={setCalendarView}
+            onNavigate={setCalendarDate}
+            formats={formats}
+            eventPropGetter={eventStyleGetter}
+          />
+        )}
       </div>
 
       <div className="card">

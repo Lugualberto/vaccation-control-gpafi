@@ -32,14 +32,17 @@ export function toCalendarEvent(vacation) {
   end.setDate(end.getDate() + 1);
   const employeeName = vacation.EMPLOYEE_NAME || vacation.employee_name || "Colaborador";
   const status = vacation.STATUS || vacation.status;
+  const eventType = vacation.EVENT_TYPE || vacation.event_type || "VACATION";
+  const eventLabel = eventType === "DAY_OFF" ? "Day Off" : "Férias";
 
   return {
     id: vacation.ID || vacation.id,
-    title: `${employeeName} (${status})`,
+    title: `${employeeName} • ${eventLabel}`,
     start,
     end,
     allDay: true,
     status,
+    eventType,
     employeeId: vacation.EMPLOYEE_ID || vacation.employee_id,
     employeeName,
   };

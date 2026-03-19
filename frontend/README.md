@@ -49,15 +49,21 @@ Integração principal:
 
 ## Funcionalidades da interface (fase atual)
 
+- tema roxo inspirado no Nu + branding atualizado
 - login de teste (mock) para validar interface sem dependencia do Oracle
 - dashboard do colaborador com:
+  - hero/banner com instrucoes internas
   - inclusao e remocao de periodos no calendario
+  - selecao de tipo de evento (Ferias / Day Off)
+  - validacao de conflito com backup (somente para Ferias)
   - preenchimento manual do saldo do periodo aquisitivo
-  - visualizacao das ferias dos demais colegas no calendario
-  - sem validacao de saldo/conflito nesta fase de prototipo
+  - visualizacao das ferias/day offs dos colegas no calendario
+  - visao de calendario em Month/Week/Day/Agenda/Year
+  - sem validacao de saldo nesta fase de prototipo
 - dashboard admin com:
   - calendario consolidado de periodos programados
   - filtro por colaborador e periodo
+  - visao anual (Year)
   - formulario para ajustar saldo anual de ferias
   - tabela de auditoria (inclusao/remocao no calendario)
 

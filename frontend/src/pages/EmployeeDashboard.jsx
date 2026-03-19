@@ -1,5 +1,5 @@
+import { addDays, addMonths, addWeeks, addYears, format } from "date-fns";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Calendar, formats, localizer, toCalendarEvent } from "../utils/calendar";
 import {
   createVacation,
   getEmployeeBalance,
@@ -9,8 +9,14 @@ import {
   removeVacation,
   updateEmployeeBalance,
 } from "../api/client";
+import CalendarControls from "../components/CalendarControls";
 import VacationRequestModal from "../components/VacationRequestModal";
+import YearCalendarView from "../components/YearCalendarView";
 import { useAuth } from "../contexts/useAuth";
+import { Calendar, formats, localizer, toCalendarEvent } from "../utils/calendar";
+
+const HERO_IMAGE =
+  "https://ih1.redbubble.net/image.2082029861.5541/bg,f8f8f8-flat,750x,075,f-pad,750x1000,f8f8f8.jpg";
 
 function normalizeSelectionRange(start, end) {
   const normalizedStart = new Date(start);
@@ -24,11 +30,31 @@ function normalizeSelectionRange(start, end) {
   return { start: normalizedStart, end: normalizedEnd };
 }
 
-function eventStyleGetter(event, currentEmployeeId) {
+function shiftDate(date, view, direction) {
+  if (view === "day") return addDays(date, direction);
+  if (view === "week") return addWeeks(date, direction);
+  if (view === "year") return addYears(date, direction);
+  return addMonths(date, direction);
+}
+
+function getEventStyle(event, currentEmployeeId) {
   const isOwnVacation = Number(event.employeeId) === Number(currentEmployeeId);
+  const isDayOff = event.eventType === "DAY_OFF";
+
+  if (isDayOff) {
+    return {
+      style: {
+        backgroundColor: "#facc15",
+        color: "#111827",
+        borderRadius: "6px",
+        border: "none",
+      },
+    };
+  }
+
   return {
     style: {
-      backgroundColor: isOwnVacation ? "#16a34a" : "#2563eb",
+      backgroundColor: isOwnVacation ? "#6d28d9" : "#a855f7",
       color: "#fff",
       borderRadius: "6px",
       border: "none",
@@ -43,12 +69,14 @@ function formatDate(value) {
 export default function EmployeeDashboard() {
   const { user } = useAuth();
   const [balance, setBalance] = useState(null);
-  const [vacations, setVacations] = useState([]);
+  const [eventsData, setEventsData] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedRange, setSelectedRange] = useState(null);
+  const [calendarView, setCalendarView] = useState("month");
+  const [calendarDate, setCalendarDate] = useState(new Date());
   const [balanceForm, setBalanceForm] = useState({
     totalDays: "30",
     usedDays: "0",
@@ -58,7 +86,7 @@ export default function EmployeeDashboard() {
 
   const currentYear = new Date().getFullYear();
   const employeeId = Number(user?.employeeId);
-  const events = useMemo(() => vacations.map(toCalendarEvent), [vacations]);
+  const events = useMemo(() => eventsData.map(toCalendarEvent), [eventsData]);
 
   const loadData = useCallback(async () => {
     if (!employeeId) return;
@@ -76,10 +104,10 @@ export default function EmployeeDashboard() {
         totalDays: String(balanceResult.TOTAL_DAYS || balanceResult.total_days),
         usedDays: String(balanceResult.USED_DAYS || balanceResult.used_days),
       });
-      setVacations(vacationsResult);
+      setEventsData(vacationsResult);
       setAuditLogs(auditResult);
     } catch {
-      setError("Falha ao carregar dashboard. Verifique backend e saldo do ano atual.");
+      setError("Falha ao carregar dashboard. Verifique os dados de teste.");
     } finally {
       setLoading(false);
     }
@@ -95,19 +123,20 @@ export default function EmployeeDashboard() {
     setModalOpen(true);
   };
 
-  const handleConfirmVacation = async ({ startDate, endDate, justification }) => {
+  const handleConfirmVacation = async ({ startDate, endDate, justification, eventType }) => {
     try {
       await createVacation({
         start_date: startDate,
         end_date: endDate,
         justification,
+        event_type: eventType,
       });
       setModalOpen(false);
       setSelectedRange(null);
       await loadData();
     } catch (requestError) {
       const apiMessage = requestError?.response?.data?.message;
-      setError(apiMessage || "Nao foi possivel registrar a solicitacao.");
+      setError(apiMessage || "Não foi possível registrar o período.");
       throw requestError;
     }
   };
@@ -124,10 +153,10 @@ export default function EmployeeDashboard() {
         used_days: Number(balanceForm.usedDays),
       });
       setBalance(updated);
-      setBalanceMessage("Saldo manual atualizado para o periodo aquisitivo atual.");
+      setBalanceMessage("Saldo manual atualizado para o período aquisitivo atual.");
     } catch (requestError) {
       const apiMessage = requestError?.response?.data?.message;
-      setError(apiMessage || "Nao foi possivel atualizar seu saldo manual.");
+      setError(apiMessage || "Não foi possível atualizar seu saldo manual.");
     } finally {
       setSavingBalance(false);
     }
@@ -135,13 +164,13 @@ export default function EmployeeDashboard() {
 
   const handleSelectEvent = async (event) => {
     const isOwnVacation = Number(event.employeeId) === Number(employeeId);
-    if (!isOwnVacation && user?.role !== "ADMIN") {
-      setError("Voce pode remover apenas os seus proprios periodos de ferias.");
+    if (!isOwnVacation) {
+      setError("Você pode remover apenas os seus próprios períodos.");
       return;
     }
 
     const shouldDelete = window.confirm(
-      `Deseja remover do calendario o periodo ${formatDate(event.start)} a ${formatDate(
+      `Deseja remover do calendário o período ${formatDate(event.start)} a ${formatDate(
         new Date(event.end.getTime() - 24 * 60 * 60 * 1000)
       )}?`
     );
@@ -154,18 +183,38 @@ export default function EmployeeDashboard() {
       await loadData();
     } catch (requestError) {
       const apiMessage = requestError?.response?.data?.message;
-      setError(apiMessage || "Nao foi possivel remover esse periodo.");
+      setError(apiMessage || "Não foi possível remover esse período.");
     }
   };
 
+  const currentLabel =
+    calendarView === "year" ? format(calendarDate, "yyyy") : format(calendarDate, "MMMM yyyy");
+
   return (
     <section className="dashboard-grid">
+      <section className="hero-banner" style={{ backgroundImage: `url(${HERO_IMAGE})` }}>
+        <div className="hero-overlay">
+          <h2>Controle de Férias da Equipe e Daysoffs 🌴</h2>
+          <p>
+            Chegou a hora que todo mundo mais gosta no trabalho: férias (rsrs). Depois de tanto
+            esforço e entrega, nada mais justo do que <strong>descansar</strong>.
+          </p>
+          <p>Aqui é o nosso controle interno de férias e day offs:</p>
+          <ul>
+            <li>informe os períodos que você planeja tirar férias;</li>
+            <li>cuide para não bater com as férias do seu backup;</li>
+            <li>
+              este controle é só interno: você ainda precisa agendar tudo formalmente no Oracle.
+            </li>
+          </ul>
+        </div>
+      </section>
+
       <div className="card">
         <h2>Dashboard do Colaborador</h2>
         {IS_MOCK_MODE ? (
           <p className="hint-text">
-            Modo de teste sem Oracle ativo: saldo e ferias salvos localmente no navegador, sem
-            validacao de conflito/saldo.
+            Modo de teste sem Oracle ativo: saldo e eventos salvos localmente no navegador.
           </p>
         ) : null}
         {loading ? <p>Carregando dados...</p> : null}
@@ -178,22 +227,21 @@ export default function EmployeeDashboard() {
             </div>
             <div>
               <strong>{balance.USED_DAYS || balance.used_days}</strong>
-              <span>Dias ja gozados</span>
+              <span>Dias já gozados</span>
             </div>
             <div>
               <strong>{balance.REMAINING_DAYS || balance.remaining_days}</strong>
-              <span>Saldo disponivel</span>
+              <span>Saldo disponível</span>
             </div>
           </div>
         ) : null}
         <form className="manual-balance-form" onSubmit={handleManualBalanceSubmit}>
-          <h3>Periodo aquisitivo (manual)</h3>
+          <h3>Período aquisitivo (manual)</h3>
           <p className="hint-text">
-            Informe manualmente seu saldo neste primeiro momento para testar a interface.
-            O calendario nao altera automaticamente este saldo.
+            Informe manualmente seu saldo nesta fase de protótipo para testar os fluxos.
           </p>
           <label>
-            Total de dias no periodo
+            Total de dias no período
             <input
               type="number"
               min="0"
@@ -205,7 +253,7 @@ export default function EmployeeDashboard() {
             />
           </label>
           <label>
-            Dias ja utilizados
+            Dias já utilizados
             <input
               type="number"
               min="0"
@@ -224,45 +272,70 @@ export default function EmployeeDashboard() {
       </div>
 
       <div className="card calendar-card">
-        <h3>Programar ferias no calendario da equipe</h3>
+        <h3>Calendário da equipe</h3>
         <p>
-          Selecione um intervalo para incluir no calendario.
-          Clique em um evento para remover (apenas periodos seus).
+          Selecione um intervalo para incluir um evento. Clique em um evento para remover
+          (somente os seus).
         </p>
+
+        <CalendarControls
+          activeView={calendarView}
+          onViewChange={setCalendarView}
+          onPrev={() => setCalendarDate((prev) => shiftDate(prev, calendarView, -1))}
+          onNext={() => setCalendarDate((prev) => shiftDate(prev, calendarView, 1))}
+          onToday={() => setCalendarDate(new Date())}
+        />
+        <p className="calendar-current-label">{currentLabel}</p>
+
         <div className="calendar-legend">
           <span className="legend-item">
-            <span className="legend-dot own" />
-            Minhas ferias
+            <span className="legend-dot own-vacation" />
+            Minhas férias
           </span>
           <span className="legend-item">
-            <span className="legend-dot team" />
-            Ferias da equipe
+            <span className="legend-dot team-vacation" />
+            Férias da equipe
+          </span>
+          <span className="legend-item">
+            <span className="legend-dot dayoff" />
+            Day Off
           </span>
         </div>
-        <Calendar
-          localizer={localizer}
-          culture="pt-BR"
-          events={events}
-          startAccessor="start"
-          endAccessor="end"
-          selectable
-          style={{ height: 580 }}
-          onSelectSlot={handleSelectSlot}
-          onSelectEvent={handleSelectEvent}
-          formats={formats}
-          eventPropGetter={(event) => eventStyleGetter(event, employeeId)}
-        />
+
+        {calendarView === "year" ? (
+          <YearCalendarView date={calendarDate} events={events} />
+        ) : (
+          <Calendar
+            localizer={localizer}
+            culture="pt-BR"
+            events={events}
+            startAccessor="start"
+            endAccessor="end"
+            selectable
+            toolbar={false}
+            date={calendarDate}
+            view={calendarView}
+            views={["month", "week", "day", "agenda"]}
+            style={{ height: 580 }}
+            onView={setCalendarView}
+            onNavigate={setCalendarDate}
+            onSelectSlot={handleSelectSlot}
+            onSelectEvent={handleSelectEvent}
+            formats={formats}
+            eventPropGetter={(event) => getEventStyle(event, employeeId)}
+          />
+        )}
       </div>
 
       <div className="card">
-        <h3>Auditoria pessoal do calendario</h3>
+        <h3>Auditoria pessoal do calendário</h3>
         {!auditLogs.length ? <p>Nenhum evento de auditoria registrado.</p> : null}
         {auditLogs.length > 0 ? (
           <table className="requests-table">
             <thead>
               <tr>
                 <th>Data/Hora</th>
-                <th>Acao</th>
+                <th>Ação</th>
                 <th>Detalhes</th>
               </tr>
             </thead>

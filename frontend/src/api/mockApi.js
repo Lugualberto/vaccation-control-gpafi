@@ -1,6 +1,15 @@
 import { AUTH_STORAGE_KEY } from "../constants/auth";
 
 const MOCK_DB_KEY = "vacation_app_mock_db";
+const BACKUP_BY_FIRST_NAME = {
+  filipi: "bianca",
+  bianca: "sabrina",
+  sabrina: "filipi",
+  leticia: null,
+  luana: null,
+  arturo: "karen",
+  karen: "arturo",
+};
 
 function mockError(status, message) {
   const error = new Error(message);
@@ -39,8 +48,8 @@ function buildDefaultDb() {
 
   return {
     counters: {
-      vacationId: 2,
-      auditId: 3,
+      vacationId: 4,
+      auditId: 5,
     },
     users: [
       {
@@ -56,6 +65,66 @@ function buildDefaultDb() {
       {
         userId: 2,
         employeeId: 2,
+        email: "filipi.souza@nubank.com.br",
+        password: "Nubank@123",
+        role: "EMPLOYEE",
+        name: "Filipi Souza",
+        chapter: "Controllership",
+        hireDate: "2022-02-01",
+      },
+      {
+        userId: 3,
+        employeeId: 3,
+        email: "bianca.alves@nubank.com.br",
+        password: "Nubank@123",
+        role: "EMPLOYEE",
+        name: "Bianca Alves",
+        chapter: "Controllership",
+        hireDate: "2021-10-10",
+      },
+      {
+        userId: 4,
+        employeeId: 4,
+        email: "sabrina.costa@nubank.com.br",
+        password: "Nubank@123",
+        role: "EMPLOYEE",
+        name: "Sabrina Costa",
+        chapter: "Controllership",
+        hireDate: "2021-08-15",
+      },
+      {
+        userId: 5,
+        employeeId: 5,
+        email: "leticia.prado@nubank.com.br",
+        password: "Nubank@123",
+        role: "EMPLOYEE",
+        name: "Leticia Prado",
+        chapter: "Controllership",
+        hireDate: "2024-04-01",
+      },
+      {
+        userId: 6,
+        employeeId: 6,
+        email: "arturo.lima@nubank.com.br",
+        password: "Nubank@123",
+        role: "EMPLOYEE",
+        name: "Arturo Lima",
+        chapter: "Controllership",
+        hireDate: "2022-11-12",
+      },
+      {
+        userId: 7,
+        employeeId: 7,
+        email: "karen.rocha@nubank.com.br",
+        password: "Nubank@123",
+        role: "EMPLOYEE",
+        name: "Karen Rocha",
+        chapter: "Controllership",
+        hireDate: "2023-01-21",
+      },
+      {
+        userId: 8,
+        employeeId: 8,
         email: "rafael.oliveira@nubank.com.br",
         password: "Nubank@123",
         role: "EMPLOYEE",
@@ -66,18 +135,51 @@ function buildDefaultDb() {
     ],
     balances: [
       { employee_id: 1, year: currentYear, total_days: 30, used_days: 5 },
-      { employee_id: 2, year: currentYear, total_days: 30, used_days: 10 },
+      { employee_id: 2, year: currentYear, total_days: 30, used_days: 8 },
+      { employee_id: 3, year: currentYear, total_days: 30, used_days: 6 },
+      { employee_id: 4, year: currentYear, total_days: 30, used_days: 4 },
+      { employee_id: 5, year: currentYear, total_days: 30, used_days: 0 },
+      { employee_id: 6, year: currentYear, total_days: 30, used_days: 3 },
+      { employee_id: 7, year: currentYear, total_days: 30, used_days: 5 },
+      { employee_id: 8, year: currentYear, total_days: 30, used_days: 2 },
     ],
     vacations: [
       {
         id: 1,
-        employee_id: 2,
-        employee_name: "Rafael Oliveira",
+        employee_id: 3,
+        employee_name: "Bianca Alves",
         start_date: `${currentYear}-08-12`,
         end_date: `${currentYear}-08-16`,
-        requested_days: 3,
+        requested_days: 5,
         status: "APPROVED",
+        event_type: "VACATION",
         justification: "Ferias escolares",
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      },
+      {
+        id: 2,
+        employee_id: 6,
+        employee_name: "Arturo Lima",
+        start_date: `${currentYear}-09-05`,
+        end_date: `${currentYear}-09-10`,
+        requested_days: 6,
+        status: "APPROVED",
+        event_type: "VACATION",
+        justification: "Viagem em familia",
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      },
+      {
+        id: 3,
+        employee_id: 1,
+        employee_name: "Luana Gualberto",
+        start_date: `${currentYear}-07-22`,
+        end_date: `${currentYear}-07-22`,
+        requested_days: 1,
+        status: "APPROVED",
+        event_type: "DAY_OFF",
+        justification: "Compromisso pessoal",
         created_at: nowIso(),
         updated_at: nowIso(),
       },
@@ -86,12 +188,34 @@ function buildDefaultDb() {
       {
         id: 1,
         vacation_request_id: 1,
-        employee_id: 2,
-        employee_name: "Rafael Oliveira",
-        actor_user_id: 2,
-        actor_name: "Rafael Oliveira",
+        employee_id: 3,
+        employee_name: "Bianca Alves",
+        actor_user_id: 3,
+        actor_name: "Bianca Alves",
         action: "CREATED",
-        details: "Periodo registrado no calendario",
+        details: "Tipo=Ferias; Periodo registrado no calendario",
+        action_at: nowIso(),
+      },
+      {
+        id: 2,
+        vacation_request_id: 2,
+        employee_id: 6,
+        employee_name: "Arturo Lima",
+        actor_user_id: 6,
+        actor_name: "Arturo Lima",
+        action: "CREATED",
+        details: "Tipo=Ferias; Periodo registrado no calendario",
+        action_at: nowIso(),
+      },
+      {
+        id: 3,
+        vacation_request_id: 3,
+        employee_id: 1,
+        employee_name: "Luana Gualberto",
+        actor_user_id: 1,
+        actor_name: "Luana Gualberto",
+        action: "CREATED",
+        details: "Tipo=Day Off; Periodo registrado no calendario",
         action_at: nowIso(),
       },
     ],
@@ -159,6 +283,13 @@ function normalizeUser(user) {
     chapter: user.chapter,
     hireDate: user.hireDate,
   };
+}
+
+function getFirstName(name) {
+  return String(name || "")
+    .trim()
+    .split(/\s+/)[0]
+    ?.toLowerCase();
 }
 
 function canAccessEmployee(actor, employeeId) {
@@ -398,9 +529,14 @@ export async function mockCreateVacation(payload) {
   const startDate = payload?.start_date;
   const endDate = payload?.end_date;
   const justification = payload?.justification || null;
+  const rawType = payload?.event_type || payload?.eventType || "VACATION";
+  const eventType = String(rawType).toUpperCase();
 
   if (!startDate || !endDate) {
     throw mockError(400, "Campos obrigatorios: start_date e end_date.");
+  }
+  if (!["VACATION", "DAY_OFF"].includes(eventType)) {
+    throw mockError(400, "Tipo de evento invalido.");
   }
 
   const start = parseDate(startDate);
@@ -413,6 +549,37 @@ export async function mockCreateVacation(payload) {
   const requestedDays = countCalendarDays(startDate, endDate);
   const employee = db.users.find((item) => Number(item.employeeId) === employeeId);
 
+  if (eventType === "VACATION") {
+    const actorFirstName = getFirstName(actor.name);
+    const backupFirstName = BACKUP_BY_FIRST_NAME[actorFirstName];
+
+    if (backupFirstName) {
+      const backupUser = db.users.find((item) => getFirstName(item.name) === backupFirstName);
+      if (backupUser) {
+        const hasConflict = db.vacations.some((item) => {
+          if (
+            Number(item.employee_id) !== Number(backupUser.employeeId) ||
+            item.status !== "APPROVED" ||
+            (item.event_type || "VACATION") !== "VACATION"
+          ) {
+            return false;
+          }
+
+          const existingStart = parseDate(item.start_date);
+          const existingEnd = parseDate(item.end_date);
+          return existingStart <= end && existingEnd >= start;
+        });
+
+        if (hasConflict) {
+          throw mockError(
+            409,
+            `Este período conflita com as férias de ${backupUser.name}. Combine com a pessoa ou escolha outro período.`
+          );
+        }
+      }
+    }
+  }
+
   const createdAt = nowIso();
   const vacation = {
     id: db.counters.vacationId++,
@@ -422,6 +589,7 @@ export async function mockCreateVacation(payload) {
     end_date: endDate,
     requested_days: requestedDays,
     status: "APPROVED",
+    event_type: eventType,
     justification,
     created_at: createdAt,
     updated_at: createdAt,
@@ -436,7 +604,7 @@ export async function mockCreateVacation(payload) {
     actor_user_id: actor.userId,
     actor_name: actor.name,
     action: "CREATED",
-    details: `Periodo ${startDate} a ${endDate}; dias_corridos=${requestedDays}`,
+    details: `Tipo=${eventType === "DAY_OFF" ? "Day Off" : "Ferias"}; Periodo ${startDate} a ${endDate}; dias_corridos=${requestedDays}`,
     action_at: nowIso(),
   });
 
@@ -474,7 +642,7 @@ export async function mockRemoveVacation(vacationId) {
     actor_user_id: actor.userId,
     actor_name: actor.name,
     action: "DELETED",
-    details: `Periodo ${vacation.start_date} a ${vacation.end_date}; dias_corridos=${vacation.requested_days}`,
+    details: `Tipo=${(vacation.event_type || "VACATION") === "DAY_OFF" ? "Day Off" : "Ferias"}; Periodo ${vacation.start_date} a ${vacation.end_date}; dias_corridos=${vacation.requested_days}`,
     action_at: nowIso(),
   });
 

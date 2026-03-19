@@ -1,7 +1,7 @@
 .app-shell {
-  max-width: 1200px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 16px;
+  padding: 20px;
 }
 
 .app-header {
@@ -9,46 +9,102 @@
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 16px 20px;
+  background: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 55%, #9333ea 100%);
+  color: #fff;
+  border-radius: 16px;
+  padding: 18px 22px;
+  box-shadow: 0 10px 28px rgba(91, 33, 182, 0.28);
 }
 
 .app-header h1 {
   margin: 0;
-  font-size: 1.35rem;
+  font-size: 1.28rem;
 }
 
 .app-header p {
-  margin: 4px 0 0;
-  color: #6b7280;
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.88);
 }
 
 .app-nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   align-items: center;
 }
 
+.app-nav a {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 9999px;
+  padding: 8px 12px;
+}
+
+.app-nav a:hover {
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.app-nav button {
+  background: #fff;
+  color: #5b21b6;
+}
+
 .app-main {
-  margin-top: 14px;
+  margin-top: 16px;
 }
 
 .dashboard-grid {
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 .card {
   background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border: 1px solid #ede9fe;
+  border-radius: 14px;
   padding: 16px;
+  box-shadow: 0 6px 22px rgba(15, 23, 42, 0.05);
+}
+
+.hero-banner {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  min-height: 240px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid #ddd6fe;
+}
+
+.hero-overlay {
+  min-height: 240px;
+  background: linear-gradient(90deg, rgba(49, 12, 101, 0.76), rgba(91, 33, 182, 0.44));
+  color: #fff;
+  padding: 22px;
+}
+
+.hero-overlay h2 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 1.5rem;
+}
+
+.hero-overlay p {
+  margin: 6px 0;
+  max-width: 860px;
+  line-height: 1.45;
+}
+
+.hero-overlay ul {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  line-height: 1.55;
 }
 
 .login-card {
-  max-width: 460px;
+  max-width: 500px;
   margin: 64px auto;
 }
 
@@ -73,8 +129,8 @@
 }
 
 .stats > div {
-  background: #eff6ff;
-  border: 1px solid #dbeafe;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
   border-radius: 10px;
   padding: 12px;
   display: flex;
@@ -83,16 +139,53 @@
 
 .stats strong {
   font-size: 1.25rem;
-  color: #1e3a8a;
+  color: #5b21b6;
 }
 
 .stats span {
   font-size: 0.83rem;
-  color: #475569;
+  color: #6b21a8;
 }
 
 .calendar-card .rbc-calendar {
   margin-top: 10px;
+}
+
+.calendar-controls {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.calendar-nav,
+.view-switcher {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.view-switcher button,
+.calendar-nav button {
+  min-width: 70px;
+}
+
+.view-active {
+  background: #6d28d9;
+  color: #fff;
+  border: 1px solid #6d28d9;
+  border-radius: 8px;
+  padding: 0.55rem 0.95rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.calendar-current-label {
+  margin: 10px 0 0;
+  font-weight: 600;
+  color: #4c1d95;
 }
 
 .calendar-legend {
@@ -107,7 +200,7 @@
   align-items: center;
   gap: 6px;
   font-size: 0.88rem;
-  color: #374151;
+  color: #4b5563;
 }
 
 .legend-dot {
@@ -117,12 +210,16 @@
   display: inline-block;
 }
 
-.legend-dot.own {
-  background: #16a34a;
+.legend-dot.own-vacation {
+  background: #6d28d9;
 }
 
-.legend-dot.team {
-  background: #2563eb;
+.legend-dot.team-vacation {
+  background: #a855f7;
+}
+
+.legend-dot.dayoff {
+  background: #facc15;
 }
 
 .error-text {
@@ -132,7 +229,7 @@
 
 .hint-text {
   margin-top: 8px;
-  color: #475569;
+  color: #6b7280;
   font-size: 0.88rem;
 }
 
@@ -151,12 +248,7 @@
   align-items: end;
 }
 
-.filters label {
-  display: grid;
-  gap: 6px;
-  font-size: 0.9rem;
-}
-
+.filters label,
 .balance-form label {
   display: grid;
   gap: 6px;
@@ -196,19 +288,14 @@
 
 .requests-table th,
 .requests-table td {
-  border: 1px solid #e5e7eb;
+  border: 1px solid #ede9fe;
   padding: 8px;
   text-align: left;
   vertical-align: top;
 }
 
 .requests-table th {
-  background: #f9fafb;
-}
-
-.table-actions {
-  display: flex;
-  gap: 8px;
+  background: #faf5ff;
 }
 
 button.danger {
@@ -216,8 +303,8 @@ button.danger {
 }
 
 button.ghost {
-  background: #e5e7eb;
-  color: #111827;
+  background: #ede9fe;
+  color: #4c1d95;
 }
 
 .modal-backdrop {
@@ -234,7 +321,7 @@ button.ghost {
   width: min(520px, 100%);
   background: #fff;
   border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #ddd6fe;
   padding: 16px;
 }
 
@@ -249,6 +336,96 @@ button.ghost {
   gap: 10px;
 }
 
+.year-calendar-wrapper {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.year-month-card {
+  border: 1px solid #ede9fe;
+  border-radius: 12px;
+  padding: 10px;
+  background: #fff;
+}
+
+.year-month-card h4 {
+  margin: 0 0 8px;
+  color: #581c87;
+  font-size: 0.98rem;
+  text-transform: capitalize;
+}
+
+.year-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  font-size: 0.73rem;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+.year-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.year-day {
+  min-height: 26px;
+  border-radius: 6px;
+  padding: 2px;
+  background: #faf5ff;
+  border: 1px solid #f3e8ff;
+  font-size: 0.72rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.year-day.is-outside-month {
+  opacity: 0.35;
+}
+
+.year-day-dots {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.year-day-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  display: inline-block;
+}
+
+.year-day-dots .dot-vacation {
+  background: #7c3aed;
+}
+
+.year-day-dots .dot-dayoff {
+  background: #facc15;
+}
+
+.rbc-today {
+  background: #f5f3ff !important;
+}
+
+.rbc-selected-cell {
+  background: #ede9fe !important;
+}
+
+.rbc-toolbar button.rbc-active {
+  background: #6d28d9;
+  color: #fff;
+}
+
+@media (max-width: 1024px) {
+  .year-calendar-wrapper {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+}
+
 @media (max-width: 900px) {
   .app-header {
     flex-direction: column;
@@ -259,15 +436,10 @@ button.ghost {
     grid-template-columns: 1fr;
   }
 
-  .filters {
-    grid-template-columns: 1fr;
-  }
-
-  .balance-form {
-    grid-template-columns: 1fr;
-  }
-
-  .manual-balance-form {
+  .filters,
+  .balance-form,
+  .manual-balance-form,
+  .year-calendar-wrapper {
     grid-template-columns: 1fr;
   }
 

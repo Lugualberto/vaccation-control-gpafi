@@ -8,7 +8,7 @@ export default function AppLayout() {
     <div className="app-shell">
       <header className="app-header">
         <div>
-          <h1>Controle de Férias da Equipe</h1>
+          <h1>Controle de Férias da Equipe e Daysoffs 🌴</h1>
           {user ? <p>Usuário: {user.name || user.NAME}</p> : null}
         </div>
         <nav className="app-nav">

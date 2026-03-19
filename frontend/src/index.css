@@ -1,7 +1,7 @@
 :root {
   font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: #111827;
-  background-color: #f3f4f6;
+  background-color: #f8f7ff;
 }
 
 * {
@@ -13,7 +13,7 @@ body {
 }
 
 a {
-  color: #1d4ed8;
+  color: #7c3aed;
   text-decoration: none;
 }
 
@@ -27,7 +27,7 @@ button {
   padding: 0.55rem 0.95rem;
   font-size: 0.92rem;
   font-weight: 600;
-  background: #1d4ed8;
+  background: #7c3aed;
   color: #fff;
   cursor: pointer;
 }
@@ -45,7 +45,7 @@ input,
 select,
 textarea {
   width: 100%;
-  border: 1px solid #d1d5db;
+  border: 1px solid #ddd6fe;
   border-radius: 8px;
   padding: 0.55rem 0.65rem;
   font-size: 0.95rem;

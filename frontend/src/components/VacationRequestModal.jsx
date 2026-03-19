@@ -18,6 +18,7 @@ function countCalendarDays(startDate, endDate) {
 
 export default function VacationRequestModal({ open, selectedRange, onClose, onConfirm }) {
   const [justification, setJustification] = useState("");
+  const [eventType, setEventType] = useState("VACATION");
   const [submitting, setSubmitting] = useState(false);
 
   const period = useMemo(() => {
@@ -45,8 +46,10 @@ export default function VacationRequestModal({ open, selectedRange, onClose, onC
         startDate: period.startDate,
         endDate: period.endDate,
         justification,
+        eventType,
       });
       setJustification("");
+      setEventType("VACATION");
     } finally {
       setSubmitting(false);
     }
@@ -55,7 +58,7 @@ export default function VacationRequestModal({ open, selectedRange, onClose, onC
   return (
     <div className="modal-backdrop" role="presentation">
       <div className="modal">
-        <h3>Confirmar solicitação de férias</h3>
+        <h3>Confirmar período no calendário</h3>
         <p>
           Período: <strong>{period.startDate}</strong> até <strong>{period.endDate}</strong>
         </p>
@@ -63,6 +66,20 @@ export default function VacationRequestModal({ open, selectedRange, onClose, onC
           Dias corridos estimados: <strong>{period.calendarDays}</strong>
         </p>
         <form onSubmit={handleSubmit}>
+          <label htmlFor="eventType">Tipo do evento</label>
+          <select
+            id="eventType"
+            value={eventType}
+            onChange={(event) => setEventType(event.target.value)}
+          >
+            <option value="VACATION">Férias</option>
+            <option value="DAY_OFF">Day Off</option>
+          </select>
+          {eventType === "DAY_OFF" ? (
+            <p className="hint-text">
+              Day Off não usa saldo nesta fase e pode ser marcado livremente.
+            </p>
+          ) : null}
           <label htmlFor="justification">Justificativa (opcional)</label>
           <textarea
             id="justification"
