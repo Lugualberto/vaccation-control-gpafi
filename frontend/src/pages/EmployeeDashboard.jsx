@@ -165,7 +165,7 @@ export default function EmployeeDashboard() {
       <div className="card">
         <h3>Auditoria pessoal do calendario</h3>
         {!auditLogs.length ? <p>Nenhum evento de auditoria registrado.</p> : null}
-        {!!auditLogs.length ? (
+        {auditLogs.length > 0 ? (
           <table className="requests-table">
             <thead>
               <tr>

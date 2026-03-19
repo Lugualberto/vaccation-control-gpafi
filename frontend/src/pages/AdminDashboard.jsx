@@ -316,7 +316,7 @@ export default function AdminDashboard() {
       <div className="card">
         <h3>Auditoria de inclusoes/remocoes</h3>
         {!auditLogs.length ? <p>Nenhum evento encontrado para os filtros atuais.</p> : null}
-        {!!auditLogs.length ? (
+        {auditLogs.length > 0 ? (
           <table className="requests-table">
             <thead>
               <tr>
