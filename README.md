@@ -34,14 +34,25 @@ Projeto full-stack com:
 
 1. O período de férias deve começar e terminar no **mesmo ano**.
 2. O cálculo de dias está em **dias úteis** (segunda a sexta).
-3. Autenticação é feita por JWT com perfis `ADMIN` e `EMPLOYEE`.
-4. Não existe aprovação de gestor: o próprio funcionário programa/remover suas férias.
-5. Administrador pode ajustar saldo anual por colaborador (`PUT /api/employees/:id/balance/:year`).
+3. Nesta fase inicial, o frontend roda em **modo mock local** por padrão (`VITE_USE_MOCK_DATA=true`) para validar interface sem Oracle.
+4. Cada colaborador pode preencher manualmente seu saldo do período aquisitivo para testes.
+5. Não existe aprovação de gestor: o próprio funcionário programa/remove suas férias.
 6. Inclusões/remocoes de calendário ficam registradas em auditoria.
 
 ## Como rodar
 
-### 1) Banco Oracle
+### 1) Frontend (modo teste sem Oracle)
+
+```bash
+cd frontend
+cp .env.example .env
+npm install
+npm run dev
+```
+
+App em `http://localhost:5173`.
+
+### 2) Backend + Oracle (opcional nesta fase)
 
 No usuário/schema Oracle desejado, execute:
 
@@ -50,7 +61,7 @@ No usuário/schema Oracle desejado, execute:
 @backend/db/seed.sql
 ```
 
-### 2) Backend
+### 3) Backend
 
 ```bash
 cd backend
@@ -61,14 +72,3 @@ npm run dev
 ```
 
 API em `http://localhost:3000`.
-
-### 3) Frontend
-
-```bash
-cd frontend
-cp .env.example .env
-npm install
-npm run dev
-```
-
-App em `http://localhost:5173`.

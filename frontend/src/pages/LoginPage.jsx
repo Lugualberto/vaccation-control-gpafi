@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { IS_MOCK_MODE } from "../api/client";
 import { useAuth } from "../contexts/useAuth";
 
 export default function LoginPage() {
@@ -44,7 +45,13 @@ export default function LoginPage() {
     <section className="card login-card">
       <h2>Login</h2>
       <p>Autentique-se com e-mail corporativo e senha.</p>
-      <p className="hint-text">Usuario seed: luana.gualberto@nubank.com.br / Nubank@123</p>
+      {IS_MOCK_MODE ? (
+        <p className="hint-text">
+          Modo de teste sem Oracle ativo. Usuario seed: luana.gualberto@nubank.com.br / Nubank@123
+        </p>
+      ) : (
+        <p className="hint-text">Modo API real ativo (backend + Oracle).</p>
+      )}
       {error ? <p className="error-text">{error}</p> : null}
       <form onSubmit={handleSubmit}>
         <label htmlFor="email">E-mail</label>

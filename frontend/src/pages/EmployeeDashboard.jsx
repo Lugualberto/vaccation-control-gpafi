@@ -4,8 +4,10 @@ import {
   createVacation,
   getEmployeeBalance,
   getEmployeeVacations,
+  IS_MOCK_MODE,
   listVacationAuditLogs,
   removeVacation,
+  updateEmployeeBalance,
 } from "../api/client";
 import VacationRequestModal from "../components/VacationRequestModal";
 import { useAuth } from "../contexts/useAuth";
@@ -46,6 +48,12 @@ export default function EmployeeDashboard() {
   const [error, setError] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedRange, setSelectedRange] = useState(null);
+  const [balanceForm, setBalanceForm] = useState({
+    totalDays: "30",
+    usedDays: "0",
+  });
+  const [savingBalance, setSavingBalance] = useState(false);
+  const [balanceMessage, setBalanceMessage] = useState("");
 
   const currentYear = new Date().getFullYear();
   const employeeId = Number(user?.employeeId);
@@ -63,6 +71,10 @@ export default function EmployeeDashboard() {
         listVacationAuditLogs({ employeeId }),
       ]);
       setBalance(balanceResult);
+      setBalanceForm({
+        totalDays: String(balanceResult.TOTAL_DAYS || balanceResult.total_days),
+        usedDays: String(balanceResult.USED_DAYS || balanceResult.used_days),
+      });
       setVacations(vacationsResult);
       setAuditLogs(auditResult);
     } catch {
@@ -99,6 +111,27 @@ export default function EmployeeDashboard() {
     }
   };
 
+  const handleManualBalanceSubmit = async (event) => {
+    event.preventDefault();
+    setSavingBalance(true);
+    setBalanceMessage("");
+    setError("");
+
+    try {
+      const updated = await updateEmployeeBalance(employeeId, currentYear, {
+        total_days: Number(balanceForm.totalDays),
+        used_days: Number(balanceForm.usedDays),
+      });
+      setBalance(updated);
+      setBalanceMessage("Saldo manual atualizado para o periodo aquisitivo atual.");
+    } catch (requestError) {
+      const apiMessage = requestError?.response?.data?.message;
+      setError(apiMessage || "Nao foi possivel atualizar seu saldo manual.");
+    } finally {
+      setSavingBalance(false);
+    }
+  };
+
   const handleSelectEvent = async (event) => {
     const shouldDelete = window.confirm(
       `Deseja remover do calendario o periodo ${formatDate(event.start)} a ${formatDate(
@@ -122,6 +155,11 @@ export default function EmployeeDashboard() {
     <section className="dashboard-grid">
       <div className="card">
         <h2>Dashboard do Colaborador</h2>
+        {IS_MOCK_MODE ? (
+          <p className="hint-text">
+            Modo de teste sem Oracle ativo: saldo e ferias salvos localmente no navegador.
+          </p>
+        ) : null}
         {loading ? <p>Carregando dados...</p> : null}
         {error ? <p className="error-text">{error}</p> : null}
         {balance ? (
@@ -140,6 +178,40 @@ export default function EmployeeDashboard() {
             </div>
           </div>
         ) : null}
+        <form className="manual-balance-form" onSubmit={handleManualBalanceSubmit}>
+          <h3>Periodo aquisitivo (manual)</h3>
+          <p className="hint-text">
+            Informe manualmente seu saldo neste primeiro momento para testar a interface.
+          </p>
+          <label>
+            Total de dias no periodo
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              value={balanceForm.totalDays}
+              onChange={(event) =>
+                setBalanceForm((prev) => ({ ...prev, totalDays: event.target.value }))
+              }
+            />
+          </label>
+          <label>
+            Dias ja utilizados
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              value={balanceForm.usedDays}
+              onChange={(event) =>
+                setBalanceForm((prev) => ({ ...prev, usedDays: event.target.value }))
+              }
+            />
+          </label>
+          <button type="submit" disabled={savingBalance}>
+            {savingBalance ? "Salvando..." : "Salvar saldo manual"}
+          </button>
+          {balanceMessage ? <p>{balanceMessage}</p> : null}
+        </form>
       </div>
 
       <div className="card calendar-card">

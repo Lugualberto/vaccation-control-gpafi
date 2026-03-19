@@ -12,7 +12,12 @@ Por padrao:
 
 ```env
 VITE_API_URL=http://localhost:3000/api
+VITE_USE_MOCK_DATA=true
 ```
+
+> Com `VITE_USE_MOCK_DATA=true` (padrao), a interface funciona sem Oracle/backend,
+> com persistencia local no navegador (`localStorage`) para testes de UX.
+> Para usar API real, configure `VITE_USE_MOCK_DATA=false`.
 
 ## Rodar localmente
 
@@ -44,14 +49,21 @@ Integração principal:
 />
 ```
 
-## Funcionalidades da interface
+## Funcionalidades da interface (fase atual)
 
-- login real com e-mail/senha usando JWT
-- dashboard do colaborador com saldo, inclusao e remocao de periodos no calendario
+- login de teste (mock) para validar interface sem dependencia do Oracle
+- dashboard do colaborador com:
+  - inclusao e remocao de periodos no calendario
+  - preenchimento manual do saldo do periodo aquisitivo
 - dashboard admin com:
   - calendario consolidado de periodos programados
   - filtro por colaborador e periodo
   - formulario para ajustar saldo anual de ferias
   - tabela de auditoria (inclusao/remocao no calendario)
 
-Observacao: a contagem exibida no modal e no backend considera **dias uteis** (segunda a sexta).
+Observacao: a contagem exibida no modal considera **dias uteis** (segunda a sexta).
+
+## Credenciais mock para teste
+
+- `luana.gualberto@nubank.com.br` / `Nubank@123` (ADMIN)
+- `rafael.oliveira@nubank.com.br` / `Nubank@123` (EMPLOYEE)

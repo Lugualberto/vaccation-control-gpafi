@@ -126,6 +126,25 @@
   font-size: 0.9rem;
 }
 
+.manual-balance-form {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(150px, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.manual-balance-form h3,
+.manual-balance-form .hint-text,
+.manual-balance-form button,
+.manual-balance-form p {
+  grid-column: 1 / -1;
+}
+
+.manual-balance-form h3 {
+  margin: 0;
+}
+
 .form-actions {
   display: flex;
   align-items: center;
@@ -208,6 +227,10 @@ button.ghost {
   }
 
   .balance-form {
+    grid-template-columns: 1fr;
+  }
+
+  .manual-balance-form {
     grid-template-columns: 1fr;
   }
 

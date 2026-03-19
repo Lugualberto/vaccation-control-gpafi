@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   getEmployeeBalance,
   getEmployees,
+  IS_MOCK_MODE,
   listVacationAuditLogs,
   listVacations,
   updateEmployeeBalance,
@@ -177,6 +178,11 @@ export default function AdminDashboard() {
       <div className="card">
         <h2>Dashboard do Administrador</h2>
         <p>Visualize o calendario da equipe, auditoria e ajuste saldos anuais.</p>
+        {IS_MOCK_MODE ? (
+          <p className="hint-text">
+            Modo de teste sem Oracle ativo: os dados estao sendo persistidos no navegador.
+          </p>
+        ) : null}
         <p className="hint-text">Sessao: {user?.email || user?.EMAIL}</p>
         {error ? <p className="error-text">{error}</p> : null}
       </div>
