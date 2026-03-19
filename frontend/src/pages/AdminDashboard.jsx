@@ -28,7 +28,7 @@ function eventStyleGetter(event) {
   const isDayOff = event.eventType === "DAY_OFF";
   return {
     style: {
-      backgroundColor: isDayOff ? "#facc15" : "#8b5cf6",
+      backgroundColor: isDayOff ? "#facc15" : "#60a5fa",
       color: isDayOff ? "#111827" : "#fff",
       borderRadius: "6px",
       border: "none",

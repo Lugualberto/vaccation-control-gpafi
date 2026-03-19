@@ -5,6 +5,7 @@ export const INITIAL_BACKUP_BY_FIRST_NAME = {
   leticia: "sabrina",
   luana: "rafael",
   rafael: "luana",
+  camila: null,
   arturo: "karen",
   karen: "arturo",
 };

@@ -11,6 +11,10 @@ const CORPORATE_EMAIL_DOMAIN = String(
   import.meta.env.VITE_CORPORATE_EMAIL_DOMAIN || "nubank.com.br"
 ).toLowerCase();
 const DB_SCHEMA_VERSION = 2;
+const ADMIN_EMAILS = new Set([
+  "luana.gualberto@nubank.com.br",
+  "camila.palomo@nubank.com.br",
+]);
 
 function mockError(status, message) {
   const error = new Error(message);
@@ -127,6 +131,16 @@ function buildDefaultDb() {
       chapter: "Controllership",
       hireDate: "2023-01-10",
     },
+    {
+      userId: 9,
+      employeeId: 9,
+      email: "camila.palomo@nubank.com.br",
+      password: "Nubank@123",
+      role: "ADMIN",
+      name: "Camila Palomo",
+      chapter: "Controllership",
+      hireDate: "2022-07-15",
+    },
   ];
 
   const firstNameToEmployeeId = Object.fromEntries(
@@ -156,6 +170,7 @@ function buildDefaultDb() {
       { employee_id: 6, year: currentYear, total_days: 30, used_days: 3 },
       { employee_id: 7, year: currentYear, total_days: 30, used_days: 5 },
       { employee_id: 8, year: currentYear, total_days: 30, used_days: 2 },
+      { employee_id: 9, year: currentYear, total_days: 30, used_days: 4 },
     ],
     vacations: [
       {
@@ -528,12 +543,15 @@ function ensureUserForCorporateEmail(db, email) {
 
   let user = db.users.find((item) => item.email.toLowerCase() === normalizedEmail);
   if (user) {
+    if (ADMIN_EMAILS.has(normalizedEmail) && user.role !== "ADMIN") {
+      user.role = "ADMIN";
+    }
     return user;
   }
 
   const newEmployeeId = getNextEmployeeId(db);
   const newUserId = getNextUserId(db);
-  const isAdmin = normalizedEmail === "luana.gualberto@nubank.com.br";
+  const isAdmin = ADMIN_EMAILS.has(normalizedEmail);
 
   user = {
     userId: newUserId,

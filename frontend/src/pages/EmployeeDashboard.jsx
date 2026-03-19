@@ -56,7 +56,7 @@ function getEventStyle(event, currentEmployeeId) {
 
   return {
     style: {
-      backgroundColor: isOwnVacation ? "#6d28d9" : "#a855f7",
+      backgroundColor: isOwnVacation ? "#6d28d9" : "#60a5fa",
       color: "#fff",
       borderRadius: "6px",
       border: "none",
