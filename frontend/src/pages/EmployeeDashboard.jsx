@@ -3,8 +3,8 @@ import { Calendar, formats, localizer, toCalendarEvent } from "../utils/calendar
 import {
   createVacation,
   getEmployeeBalance,
-  getEmployeeVacations,
   IS_MOCK_MODE,
+  listVacations,
   listVacationAuditLogs,
   removeVacation,
   updateEmployeeBalance,
@@ -24,10 +24,11 @@ function normalizeSelectionRange(start, end) {
   return { start: normalizedStart, end: normalizedEnd };
 }
 
-function eventStyleGetter() {
+function eventStyleGetter(event, currentEmployeeId) {
+  const isOwnVacation = Number(event.employeeId) === Number(currentEmployeeId);
   return {
     style: {
-      backgroundColor: "#16a34a",
+      backgroundColor: isOwnVacation ? "#16a34a" : "#2563eb",
       color: "#fff",
       borderRadius: "6px",
       border: "none",
@@ -67,7 +68,7 @@ export default function EmployeeDashboard() {
     try {
       const [balanceResult, vacationsResult, auditResult] = await Promise.all([
         getEmployeeBalance(employeeId, currentYear),
-        getEmployeeVacations(employeeId, "APPROVED"),
+        listVacations({ status: "APPROVED" }),
         listVacationAuditLogs({ employeeId }),
       ]);
       setBalance(balanceResult);
@@ -133,6 +134,12 @@ export default function EmployeeDashboard() {
   };
 
   const handleSelectEvent = async (event) => {
+    const isOwnVacation = Number(event.employeeId) === Number(employeeId);
+    if (!isOwnVacation && user?.role !== "ADMIN") {
+      setError("Voce pode remover apenas os seus proprios periodos de ferias.");
+      return;
+    }
+
     const shouldDelete = window.confirm(
       `Deseja remover do calendario o periodo ${formatDate(event.start)} a ${formatDate(
         new Date(event.end.getTime() - 24 * 60 * 60 * 1000)
@@ -217,10 +224,21 @@ export default function EmployeeDashboard() {
       </div>
 
       <div className="card calendar-card">
-        <h3>Programar ferias no calendario</h3>
+        <h3>Programar ferias no calendario da equipe</h3>
         <p>
-          Selecione um intervalo para incluir no calendario. Clique em um evento para remover.
+          Selecione um intervalo para incluir no calendario.
+          Clique em um evento para remover (apenas periodos seus).
         </p>
+        <div className="calendar-legend">
+          <span className="legend-item">
+            <span className="legend-dot own" />
+            Minhas ferias
+          </span>
+          <span className="legend-item">
+            <span className="legend-dot team" />
+            Ferias da equipe
+          </span>
+        </div>
         <Calendar
           localizer={localizer}
           culture="pt-BR"
@@ -232,7 +250,7 @@ export default function EmployeeDashboard() {
           onSelectSlot={handleSelectSlot}
           onSelectEvent={handleSelectEvent}
           formats={formats}
-          eventPropGetter={eventStyleGetter}
+          eventPropGetter={(event) => eventStyleGetter(event, employeeId)}
         />
       </div>
 

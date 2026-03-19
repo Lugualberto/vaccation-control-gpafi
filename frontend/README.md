@@ -53,6 +53,7 @@ Integração principal:
 - dashboard do colaborador com:
   - inclusao e remocao de periodos no calendario
   - preenchimento manual do saldo do periodo aquisitivo
+  - visualizacao das ferias dos demais colegas no calendario
   - sem validacao de saldo/conflito nesta fase de prototipo
 - dashboard admin com:
   - calendario consolidado de periodos programados

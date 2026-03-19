@@ -325,7 +325,7 @@ export async function mockGetEmployeeVacations(employeeId, status) {
 }
 
 export async function mockListVacations(filters = {}) {
-  const actor = getCurrentUserOrThrow();
+  getCurrentUserOrThrow();
   const db = readDb();
 
   const normalizedStatus = filters.status ? String(filters.status).toUpperCase() : null;
@@ -334,14 +334,8 @@ export async function mockListVacations(filters = {}) {
   const employeeIdFilter = filters.employeeId ? Number(filters.employeeId) : null;
 
   let result = db.vacations.slice();
-  if (actor.role !== "ADMIN") {
-    result = result.filter((item) => Number(item.employee_id) === Number(actor.employeeId));
-  }
 
   if (employeeIdFilter) {
-    if (actor.role !== "ADMIN" && Number(actor.employeeId) !== employeeIdFilter) {
-      throw mockError(403, "Sem permissao para consultar outro colaborador.");
-    }
     result = result.filter((item) => Number(item.employee_id) === employeeIdFilter);
   }
 
