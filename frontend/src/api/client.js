@@ -2,6 +2,7 @@ import {
   mockCreateVacation,
   mockGetCurrentUser,
   mockGetEmployeeBalance,
+  mockGetEmployeeHourBank,
   mockGetEmployeeById,
   mockGetEmployeeVacations,
   mockGetEmployees,
@@ -10,8 +11,9 @@ import {
   mockListVacations,
   mockLoginWithCorporateEmail,
   mockRemoveVacation,
-  mockUpdateEmployeeBalance,
   mockUpdateBackupAssignment,
+  mockUpdateEmployeeBalance,
+  mockUpdateEmployeeHourBank,
 } from "./mockApi";
 
 export const IS_MOCK_MODE = true;
@@ -40,8 +42,16 @@ export async function getEmployeeBalance(employeeId, year) {
   return mockGetEmployeeBalance(employeeId, year);
 }
 
+export async function getEmployeeHourBank(employeeId) {
+  return mockGetEmployeeHourBank(employeeId);
+}
+
 export async function updateEmployeeBalance(employeeId, year, payload) {
   return mockUpdateEmployeeBalance(employeeId, year, payload);
+}
+
+export async function updateEmployeeHourBank(employeeId, payload) {
+  return mockUpdateEmployeeHourBank(employeeId, payload);
 }
 
 export async function getEmployeeVacations(employeeId, status) {

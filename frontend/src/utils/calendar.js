@@ -42,11 +42,14 @@ export function toCalendarEvent(vacation) {
   const employeeName = vacation.EMPLOYEE_NAME || vacation.employee_name || "Teammate";
   const status = vacation.STATUS || vacation.status;
   const eventType = vacation.EVENT_TYPE || vacation.event_type || "VACATION";
+  const dayOffDuration = vacation.DAY_OFF_DURATION || vacation.day_off_duration || null;
   const eventLabel = eventType === "DAY_OFF" ? "Day Off" : "Vacation";
+  const dayOffSuffix =
+    eventType === "DAY_OFF" && dayOffDuration === "HALF_DAY" ? " (Half day)" : "";
 
   return {
     id: vacation.ID || vacation.id,
-    title: `${employeeName} • ${eventLabel}`,
+    title: `${employeeName} • ${eventLabel}${dayOffSuffix}`,
     start,
     end,
     allDay: true,

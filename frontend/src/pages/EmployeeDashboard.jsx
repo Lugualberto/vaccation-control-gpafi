@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   createVacation,
   getEmployeeBalance,
+  getEmployeeHourBank,
   IS_SHARED_MOCK_MODE,
   IS_MOCK_MODE,
   listBackupAssignments,
@@ -10,9 +11,11 @@ import {
   listVacationAuditLogs,
   removeVacation,
   updateEmployeeBalance,
+  updateEmployeeHourBank,
 } from "../api/client";
 import CalendarControls from "../components/CalendarControls";
 import VacationRequestModal from "../components/VacationRequestModal";
+import { isUnlimitedDayOffEmail } from "../constants/dayOff";
 import YearCalendarView from "../components/YearCalendarView";
 import { useAuth } from "../contexts/useAuth";
 import { Calendar, formats, localizer, toCalendarEvent } from "../utils/calendar";
@@ -84,8 +87,14 @@ export default function EmployeeDashboard() {
     totalDays: "30",
     usedDays: "0",
   });
+  const [hourBank, setHourBank] = useState(null);
+  const [hourBankForm, setHourBankForm] = useState({
+    totalHours: "0",
+  });
   const [savingBalance, setSavingBalance] = useState(false);
+  const [savingHourBank, setSavingHourBank] = useState(false);
   const [balanceMessage, setBalanceMessage] = useState("");
+  const [hourBankMessage, setHourBankMessage] = useState("");
   const [backupInfo, setBackupInfo] = useState({
     hasConfiguredBackup: false,
     backupDisplayName: "new hire",
@@ -93,6 +102,10 @@ export default function EmployeeDashboard() {
 
   const currentYear = new Date().getFullYear();
   const employeeId = Number(user?.employeeId);
+  const isUnlimitedDayOff = useMemo(
+    () => isUnlimitedDayOffEmail(user?.email || user?.EMAIL),
+    [user?.email, user?.EMAIL]
+  );
   const events = useMemo(() => eventsData.map(toCalendarEvent), [eventsData]);
   const visibleEvents = useMemo(() => {
     if (calendarScope === "MINE") {
@@ -112,10 +125,17 @@ export default function EmployeeDashboard() {
         listVacationAuditLogs({ employeeId }),
         listBackupAssignments(),
       ]);
+      const hourBankResult = isUnlimitedDayOff
+        ? null
+        : await getEmployeeHourBank(employeeId);
       setBalance(balanceResult);
       setBalanceForm({
         totalDays: String(balanceResult.TOTAL_DAYS || balanceResult.total_days),
         usedDays: String(balanceResult.USED_DAYS || balanceResult.used_days),
+      });
+      setHourBank(hourBankResult);
+      setHourBankForm({
+        totalHours: String(hourBankResult?.TOTAL_HOURS || hourBankResult?.total_hours || 0),
       });
       setEventsData(vacationsResult);
       setAuditLogs(auditResult);
@@ -130,7 +150,7 @@ export default function EmployeeDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [employeeId, currentYear]);
+  }, [employeeId, currentYear, isUnlimitedDayOff]);
 
   useEffect(() => {
     loadData();
@@ -159,13 +179,20 @@ export default function EmployeeDashboard() {
     setModalOpen(true);
   };
 
-  const handleConfirmVacation = async ({ startDate, endDate, justification, eventType }) => {
+  const handleConfirmVacation = async ({
+    startDate,
+    endDate,
+    justification,
+    eventType,
+    dayOffDuration,
+  }) => {
     try {
       await createVacation({
         start_date: startDate,
         end_date: endDate,
         justification,
         event_type: eventType,
+        day_off_duration: dayOffDuration,
       });
       setModalOpen(false);
       setSelectedRange(null);
@@ -195,6 +222,29 @@ export default function EmployeeDashboard() {
       setError(apiMessage || "Could not update your manual balance.");
     } finally {
       setSavingBalance(false);
+    }
+  };
+
+  const handleManualHourBankSubmit = async (event) => {
+    event.preventDefault();
+    setSavingHourBank(true);
+    setHourBankMessage("");
+    setError("");
+
+    try {
+      const updated = await updateEmployeeHourBank(employeeId, {
+        total_hours: Number(hourBankForm.totalHours),
+      });
+      setHourBank(updated);
+      setHourBankForm({
+        totalHours: String(updated.TOTAL_HOURS || updated.total_hours),
+      });
+      setHourBankMessage("Hour bank updated successfully.");
+    } catch (requestError) {
+      const apiMessage = requestError?.response?.data?.message;
+      setError(apiMessage || "Could not update your hour bank.");
+    } finally {
+      setSavingHourBank(false);
     }
   };
 
@@ -249,6 +299,19 @@ export default function EmployeeDashboard() {
             <li>Follow the team calendar to avoid overlaps with your backup;</li>
             <li>
               This is an internal control: official registration in Oracle remains mandatory.
+            </li>
+          </ul>
+          <h3>Day Off and Hour Bank rules</h3>
+          <p>
+            Day Off is intended as a benefit for IC5+ roles. For IC4 and below, day off uses hour
+            bank rules.
+          </p>
+          <ul>
+            <li>Inform your available extra-hours balance in the Hour Bank section;</li>
+            <li>Each full-day day off consumes 8h from the balance;</li>
+            <li>Each half-day day off consumes 4h from the balance;</li>
+            <li>
+              The balance can be recharged manually and split across multiple day offs over time.
             </li>
           </ul>
         </div>
@@ -316,6 +379,58 @@ export default function EmployeeDashboard() {
           </button>
           {balanceMessage ? <p>{balanceMessage}</p> : null}
         </form>
+        {!isUnlimitedDayOff ? (
+          <form className="manual-hour-bank-form" onSubmit={handleManualHourBankSubmit}>
+            <h3>
+              Hour bank (Day Off){" "}
+              <span
+                className="info-tip"
+                title="For hour-bank users: full day off consumes 8h and half-day off consumes 4h."
+              >
+                ⓘ
+              </span>
+            </h3>
+            <p className="hint-text">
+              Set your current extra-hours balance. Day off events consume this balance
+              automatically.
+            </p>
+            <div className="stats compact">
+              <div>
+                <strong>{hourBank?.TOTAL_HOURS || hourBank?.total_hours || 0}h</strong>
+                <span>Total hours informed</span>
+              </div>
+              <div>
+                <strong>{hourBank?.USED_HOURS || hourBank?.used_hours || 0}h</strong>
+                <span>Consumed in day off</span>
+              </div>
+              <div>
+                <strong>{hourBank?.AVAILABLE_HOURS || hourBank?.available_hours || 0}h</strong>
+                <span>Available hours</span>
+              </div>
+            </div>
+            <label>
+              Current extra-hours balance
+              <input
+                type="number"
+                min="0"
+                step="0.5"
+                value={hourBankForm.totalHours}
+                onChange={(event) =>
+                  setHourBankForm((prev) => ({ ...prev, totalHours: event.target.value }))
+                }
+              />
+            </label>
+            <button type="submit" disabled={savingHourBank}>
+              {savingHourBank ? "Saving..." : "Save hour bank"}
+            </button>
+            {hourBankMessage ? <p>{hourBankMessage}</p> : null}
+          </form>
+        ) : (
+          <p className="hint-text">
+            Your profile is in the unlimited day off group. Day off events are recorded in the
+            calendar without hour-bank deduction.
+          </p>
+        )}
       </div>
 
       <div className="card calendar-card">
@@ -431,6 +546,8 @@ export default function EmployeeDashboard() {
       <VacationRequestModal
         open={modalOpen}
         selectedRange={selectedRange}
+        isUnlimitedDayOff={isUnlimitedDayOff}
+        availableHourBank={hourBank?.AVAILABLE_HOURS || hourBank?.available_hours || 0}
         onClose={() => {
           setModalOpen(false);
           setSelectedRange(null);

@@ -73,3 +73,16 @@ npm run dev
 ```
 
 API em `http://localhost:3000`.
+
+## Publicação (GitHub Pages)
+
+Para o repositório `nubank/vaccation-control-gpafi`, a URL final esperada é:
+
+- `https://nubank.github.io/vaccation-control-gpafi/#/employee`
+- `https://nubank.github.io/vaccation-control-gpafi/#/admin`
+
+Checklist rápido:
+
+1. Em **Settings > Pages**, selecionar **GitHub Actions**.
+2. Garantir que o ambiente `github-pages` permite deploy da branch utilizada.
+3. Executar/pushar para disparar `.github/workflows/deploy-frontend-pages.yml`.

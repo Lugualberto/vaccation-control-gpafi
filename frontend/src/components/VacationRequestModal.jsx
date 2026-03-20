@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
+import { DAY_OFF_DURATION, getDayOffHoursPerDay } from "../constants/dayOff";
 
 function formatDate(date) {
   return format(date, "yyyy-MM-dd");
@@ -17,9 +18,17 @@ function countCalendarDays(startDate, endDate) {
   return count;
 }
 
-export default function VacationRequestModal({ open, selectedRange, onClose, onConfirm }) {
+export default function VacationRequestModal({
+  open,
+  selectedRange,
+  onClose,
+  onConfirm,
+  isUnlimitedDayOff = false,
+  availableHourBank = 0,
+}) {
   const [justification, setJustification] = useState("");
   const [eventType, setEventType] = useState("VACATION");
+  const [dayOffDuration, setDayOffDuration] = useState(DAY_OFF_DURATION.FULL_DAY);
   const [submitting, setSubmitting] = useState(false);
 
   const period = useMemo(() => {
@@ -38,6 +47,8 @@ export default function VacationRequestModal({ open, selectedRange, onClose, onC
     return null;
   }
 
+  const selectedDayOffHours = period.calendarDays * getDayOffHoursPerDay(dayOffDuration);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSubmitting(true);
@@ -48,9 +59,11 @@ export default function VacationRequestModal({ open, selectedRange, onClose, onC
         endDate: period.endDate,
         justification,
         eventType,
+        dayOffDuration,
       });
       setJustification("");
       setEventType("VACATION");
+      setDayOffDuration(DAY_OFF_DURATION.FULL_DAY);
     } finally {
       setSubmitting(false);
     }
@@ -83,9 +96,28 @@ export default function VacationRequestModal({ open, selectedRange, onClose, onC
             <option value="DAY_OFF">Day Off</option>
           </select>
           {eventType === "DAY_OFF" ? (
-            <p className="hint-text">
-              Day Off does not consume vacation balance in this phase.
-            </p>
+            <>
+              <label htmlFor="dayOffDuration">Day off duration</label>
+              <select
+                id="dayOffDuration"
+                value={dayOffDuration}
+                onChange={(event) => setDayOffDuration(event.target.value)}
+              >
+                <option value={DAY_OFF_DURATION.FULL_DAY}>Full day (8h)</option>
+                <option value={DAY_OFF_DURATION.HALF_DAY}>Half day (4h)</option>
+              </select>
+              {isUnlimitedDayOff ? (
+                <p className="hint-text">
+                  Your profile has unlimited day off. This event is recorded on the calendar but
+                  does not consume your hour bank.
+                </p>
+              ) : (
+                <p className="hint-text">
+                  This day off will consume <strong>{selectedDayOffHours}h</strong> from your hour
+                  bank. Available now: <strong>{availableHourBank}h</strong>.
+                </p>
+              )}
+            </>
           ) : null}
           <label htmlFor="justification">Notes (optional)</label>
           <textarea

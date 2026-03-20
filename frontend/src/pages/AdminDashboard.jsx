@@ -2,6 +2,7 @@ import { addDays, addMonths, addWeeks, addYears, format } from "date-fns";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   getEmployeeBalance,
+  getEmployeeHourBank,
   getEmployees,
   IS_SHARED_MOCK_MODE,
   IS_MOCK_MODE,
@@ -11,6 +12,7 @@ import {
   removeVacation,
   updateEmployeeBalance,
   updateBackupAssignment,
+  updateEmployeeHourBank,
 } from "../api/client";
 import CalendarControls from "../components/CalendarControls";
 import YearCalendarView from "../components/YearCalendarView";
@@ -59,7 +61,9 @@ export default function AdminDashboard() {
   const [calendarView, setCalendarView] = useState("month");
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [balanceMessage, setBalanceMessage] = useState("");
+  const [hourBankMessage, setHourBankMessage] = useState("");
   const [savingBalance, setSavingBalance] = useState(false);
+  const [savingHourBank, setSavingHourBank] = useState(false);
   const [savingBackupEmployeeId, setSavingBackupEmployeeId] = useState(null);
   const [removingPeriodId, setRemovingPeriodId] = useState(null);
   const [calendarFilters, setCalendarFilters] = useState({
@@ -72,6 +76,12 @@ export default function AdminDashboard() {
     year: String(currentYear),
     totalDays: "30",
     usedDays: "0",
+  });
+  const [hourBankForm, setHourBankForm] = useState({
+    employeeId: "",
+    totalHours: "0",
+    usedHours: "0",
+    availableHours: "0",
   });
 
   const approvedEvents = useMemo(
@@ -186,6 +196,26 @@ export default function AdminDashboard() {
     }
   }, []);
 
+  const loadHourBankSnapshot = useCallback(async (employeeId) => {
+    if (!employeeId) {
+      return;
+    }
+
+    try {
+      const hourBank = await getEmployeeHourBank(employeeId);
+      setHourBankForm((prev) => ({
+        ...prev,
+        employeeId: String(employeeId),
+        totalHours: String(hourBank.TOTAL_HOURS || hourBank.total_hours),
+        usedHours: String(hourBank.USED_HOURS || hourBank.used_hours),
+        availableHours: String(hourBank.AVAILABLE_HOURS || hourBank.available_hours),
+      }));
+      setHourBankMessage("");
+    } catch {
+      setError("Failed to load hour bank for adjustment.");
+    }
+  }, []);
+
   useEffect(() => {
     Promise.all([
       loadEmployees(),
@@ -226,6 +256,9 @@ export default function AdminDashboard() {
     setBalanceForm((prev) =>
       prev.employeeId ? prev : { ...prev, employeeId: firstEmployeeId }
     );
+    setHourBankForm((prev) =>
+      prev.employeeId ? prev : { ...prev, employeeId: firstEmployeeId }
+    );
   }, [employees]);
 
   useEffect(() => {
@@ -235,6 +268,14 @@ export default function AdminDashboard() {
 
     loadBalanceSnapshot(balanceForm.employeeId, balanceForm.year);
   }, [balanceForm.employeeId, balanceForm.year, loadBalanceSnapshot]);
+
+  useEffect(() => {
+    if (!hourBankForm.employeeId) {
+      return;
+    }
+
+    loadHourBankSnapshot(hourBankForm.employeeId);
+  }, [hourBankForm.employeeId, loadHourBankSnapshot]);
 
   const handleApplyCalendarFilters = async (event) => {
     event.preventDefault();
@@ -270,6 +311,33 @@ export default function AdminDashboard() {
       setError(apiMessage || "Failed to adjust balance.");
     } finally {
       setSavingBalance(false);
+    }
+  };
+
+  const handleAdjustHourBank = async (event) => {
+    event.preventDefault();
+    setError("");
+    setHourBankMessage("");
+    setSavingHourBank(true);
+
+    try {
+      const updated = await updateEmployeeHourBank(hourBankForm.employeeId, {
+        total_hours: Number(hourBankForm.totalHours),
+      });
+      setHourBankForm((prev) => ({
+        ...prev,
+        totalHours: String(updated.TOTAL_HOURS || updated.total_hours),
+        usedHours: String(updated.USED_HOURS || updated.used_hours),
+        availableHours: String(updated.AVAILABLE_HOURS || updated.available_hours),
+      }));
+      setHourBankMessage(
+        `Hour bank updated. Available: ${updated.AVAILABLE_HOURS || updated.available_hours}h.`
+      );
+    } catch (requestError) {
+      const apiMessage = requestError?.response?.data?.message;
+      setError(apiMessage || "Failed to adjust hour bank.");
+    } finally {
+      setSavingHourBank(false);
     }
   };
 
@@ -314,6 +382,7 @@ export default function AdminDashboard() {
         loadAuditLogs(calendarFilters),
       ]);
       await loadBalanceSnapshot(balanceForm.employeeId, balanceForm.year);
+      await loadHourBankSnapshot(hourBankForm.employeeId);
       setBalanceMessage("Period removed and balances refreshed.");
     } catch (requestError) {
       const apiMessage = requestError?.response?.data?.message;
@@ -411,6 +480,63 @@ export default function AdminDashboard() {
         </form>
         <p className="hint-text">Available balance (preview): {previewRemainingDays}</p>
         {balanceMessage ? <p>{balanceMessage}</p> : null}
+      </div>
+
+      <div className="card">
+        <h3>Hour bank adjustment (Day Off)</h3>
+        <form className="balance-form" onSubmit={handleAdjustHourBank}>
+          <label>
+            Employee
+            <select
+              value={hourBankForm.employeeId}
+              onChange={(event) =>
+                setHourBankForm((prev) => ({ ...prev, employeeId: event.target.value }))
+              }
+            >
+              <option value="" disabled>
+                Select
+              </option>
+              {employees.map((employee) => (
+                <option key={`hours-${employee.ID || employee.id}`} value={employee.ID || employee.id}>
+                  {employee.NAME || employee.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Total extra hours
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              value={hourBankForm.totalHours}
+              onChange={(event) =>
+                setHourBankForm((prev) => ({ ...prev, totalHours: event.target.value }))
+              }
+            />
+          </label>
+          <label>
+            Consumed in day off
+            <input type="text" value={`${hourBankForm.usedHours}h`} readOnly />
+          </label>
+          <label>
+            Available hours
+            <input type="text" value={`${hourBankForm.availableHours}h`} readOnly />
+          </label>
+          <div className="form-actions">
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => loadHourBankSnapshot(hourBankForm.employeeId)}
+            >
+              Reload hour bank
+            </button>
+            <button type="submit" disabled={savingHourBank}>
+              {savingHourBank ? "Saving..." : "Save hour bank"}
+            </button>
+          </div>
+        </form>
+        {hourBankMessage ? <p>{hourBankMessage}</p> : null}
       </div>
 
       <div className="card">
@@ -577,6 +703,7 @@ export default function AdminDashboard() {
                 <th>Start</th>
                 <th>End</th>
                 <th>Days</th>
+                <th>Hours (Day Off)</th>
                 <th>Status</th>
                 <th>Action</th>
               </tr>
@@ -593,6 +720,11 @@ export default function AdminDashboard() {
                     <td>{formatYmd(period.START_DATE || period.start_date)}</td>
                     <td>{formatYmd(period.END_DATE || period.end_date)}</td>
                     <td>{period.REQUESTED_DAYS || period.requested_days || "-"}</td>
+                    <td>
+                      {eventType === "DAY_OFF"
+                        ? `${period.DAY_OFF_HOURS || period.day_off_hours || 0}h`
+                        : "-"}
+                    </td>
                     <td>{status}</td>
                     <td>
                       <button

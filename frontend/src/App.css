@@ -88,6 +88,11 @@
   font-size: 1.5rem;
 }
 
+.hero-copy h3 {
+  margin: 16px 0 8px;
+  font-size: 1rem;
+}
+
 .hero-copy p {
   margin: 6px 0;
   max-width: 860px;
@@ -163,6 +168,10 @@
 .stats span {
   font-size: 0.83rem;
   color: #6b21a8;
+}
+
+.stats.compact {
+  margin-top: 0;
 }
 
 .calendar-card .rbc-calendar {
@@ -321,6 +330,36 @@
 
 .manual-balance-form h3 {
   margin: 0;
+}
+
+.manual-hour-bank-form {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(150px, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.manual-hour-bank-form h3,
+.manual-hour-bank-form .hint-text,
+.manual-hour-bank-form .stats,
+.manual-hour-bank-form label,
+.manual-hour-bank-form button,
+.manual-hour-bank-form p {
+  grid-column: 1 / -1;
+}
+
+.manual-hour-bank-form h3 {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.info-tip {
+  cursor: help;
+  font-size: 0.9rem;
+  color: #6b21a8;
 }
 
 .form-actions {
@@ -488,6 +527,7 @@ button.ghost {
   .filters,
   .balance-form,
   .manual-balance-form,
+  .manual-hour-bank-form,
   .year-calendar-wrapper {
     grid-template-columns: 1fr;
   }

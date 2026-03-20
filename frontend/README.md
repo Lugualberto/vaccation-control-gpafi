@@ -1,85 +1,68 @@
-# Frontend - Controle de Ferias (React)
+# Frontend - Team Vacation and Day Off Control (React)
 
-## Configuracao
+## Configuration
 
-Crie o `.env` a partir do exemplo:
+Create `.env` from the example:
 
 ```bash
 cp .env.example .env
 ```
 
-Por padrao:
+Default values:
 
 ```env
 VITE_USE_MOCK_DATA=true
 VITE_CORPORATE_EMAIL_DOMAIN=nubank.com.br
+VITE_SHARED_DB_API_BASE=https://mantledb.sh/v2/vaccation-control-gpafi
 ```
 
-> A fase atual funciona totalmente sem Oracle/backend,
-> com persistencia local no navegador (`localStorage`) para testes de UX.
+The current phase works without Oracle/backend and uses shared mock persistence
+(with local fallback) for UX validation.
 
-## Rodar localmente
+## Run locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-App em `http://localhost:5173`.
+App URL: `http://localhost:5173`.
 
-## Biblioteca de calendario utilizada
+## Current UI capabilities
 
-Foi utilizado `react-big-calendar` com localizacao `pt-BR` via `date-fns`.
+- Nu-inspired gradient layout + side hero image
+- Corporate email login
+- Employee dashboard:
+  - Team calendar with Month/Week/Day/Agenda/Year views
+  - Vacation and Day Off scheduling/removal
+  - Backup conflict rule for vacations
+  - Scope filter: whole team vs only my events
+  - Manual annual vacation balance
+  - Day Off duration (full day 8h or half day 4h)
+  - Hour bank block for non-unlimited users (total, consumed, available)
+- Admin dashboard:
+  - Consolidated calendar and audit log
+  - Backup assignment management
+  - Annual vacation balance adjustment
+  - Hour bank adjustment per employee
+  - Remove any scheduled period
 
-Integração principal:
+## GitHub Pages target URL
 
-- Import do CSS no `src/main.jsx`.
-- Configuração do localizer no arquivo `src/utils/calendar.js`.
-- Uso do componente:
+Production URL for repository `nubank/vaccation-control-gpafi`:
 
-```jsx
-<Calendar
-  localizer={localizer}
-  culture="pt-BR"
-  events={events}
-  startAccessor="start"
-  endAccessor="end"
-  selectable
-/>
-```
+`https://nubank.github.io/vaccation-control-gpafi/#/admin`
 
-## Funcionalidades da interface (fase atual)
+## GitHub Pages deploy checklist (nubank/vaccation-control-gpafi)
 
-- tema roxo inspirado no Nu + branding atualizado
-- login por e-mail corporativo para identificar usuario autenticado
-- dashboard do colaborador com:
-  - hero em layout dividido com texto + ilustração lateral
-  - inclusao e remocao de periodos no calendario
-  - selecao de tipo de evento (Ferias / Day Off)
-  - validacao de conflito com backup (somente para Ferias)
-  - chip informando backup do colaborador
-  - filtro rapido: `Time inteiro` ou `So minhas ferias`
-  - preenchimento manual do saldo do periodo aquisitivo
-  - visualizacao das ferias/day offs dos colegas no calendario
-  - visao de calendario em Month/Week/Day/Agenda/Year
-  - sem validacao de saldo nesta fase de prototipo
-- dashboard admin com:
-  - calendario consolidado de periodos programados
-  - filtro por colaborador e periodo
-  - visao anual (Year)
-  - formulario para ajustar saldo anual de ferias
-  - tabela de auditoria (inclusao/remocao no calendario)
+1. In repository **Settings > Pages**, set source to **GitHub Actions**.
+2. Ensure workflow `.github/workflows/deploy-frontend-pages.yml` is enabled.
+3. Confirm environment `github-pages` allows deployments from the branch you use (for example `main` and/or `cursor/*`).
+4. Push changes; the workflow builds the frontend and deploys `frontend/dist`.
+5. Access the app at:
+   - `https://nubank.github.io/vaccation-control-gpafi/`
+   - routes under hash mode, e.g. `#/employee` and `#/admin`.
 
-Observacao: a contagem exibida no modal considera **dias corridos** (apenas informativo).
-
-## Configuração do login por e-mail corporativo (resumo)
-
-Variável necessária:
-
-- `VITE_CORPORATE_EMAIL_DOMAIN`: domínio corporativo aceito no login (ex.: `nubank.com.br`).
-
-Arquivos alterados para o fluxo:
-
-- `src/pages/LoginPage.jsx` (botão "Entrar com e-mail corporativo")
-- `src/contexts/AuthContext.jsx` (persistência do usuário autenticado)
-- `src/api/mockApi.js` e `src/api/client.js` (login local com validação do domínio corporativo)
+The workflow computes `VITE_BASE_PATH` automatically:
+- owner site repo (`<owner>.github.io`) => `/`
+- project repo (this case) => `/<repo>/`

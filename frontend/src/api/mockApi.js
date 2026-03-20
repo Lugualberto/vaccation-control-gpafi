@@ -1,5 +1,10 @@
 import { AUTH_STORAGE_KEY } from "../constants/auth";
 import { INITIAL_BACKUP_BY_FIRST_NAME, normalizeFirstName } from "../constants/backups";
+import {
+  DAY_OFF_DURATION,
+  getDayOffHoursPerDay,
+  isUnlimitedDayOffEmail,
+} from "../constants/dayOff";
 
 const MOCK_DB_KEY = "vacation_app_mock_db";
 const SHARED_DB_RESOURCE = "shared-db";
@@ -10,7 +15,7 @@ const USE_SHARED_DB = SHARED_DB_API_BASE.startsWith("http");
 const CORPORATE_EMAIL_DOMAIN = String(
   import.meta.env.VITE_CORPORATE_EMAIL_DOMAIN || "nubank.com.br"
 ).toLowerCase();
-const DB_SCHEMA_VERSION = 2;
+const DB_SCHEMA_VERSION = 3;
 const ADMIN_EMAILS = new Set([
   "luana.gualberto@nubank.com.br",
   "camila.palomo@nubank.com.br",
@@ -46,6 +51,12 @@ function countCalendarDays(startDateString, endDateString) {
 
   const millisecondsPerDay = 1000 * 60 * 60 * 24;
   return Math.floor((end - start) / millisecondsPerDay) + 1;
+}
+
+function buildDefaultHourBankMap(users) {
+  return Object.fromEntries(
+    users.map((user) => [String(user.employeeId), { total_hours: 0, used_hours: 0 }])
+  );
 }
 
 function buildDefaultDb() {
@@ -94,20 +105,20 @@ function buildDefaultDb() {
     {
       userId: 5,
       employeeId: 5,
-      email: "leticia.prado@nubank.com.br",
+      email: "leticia.oliveira@nubank.com.br",
       password: "Nubank@123",
       role: "EMPLOYEE",
-      name: "Leticia Prado",
+      name: "Leticia Oliveira",
       chapter: "Controllership",
       hireDate: "2024-04-01",
     },
     {
       userId: 6,
       employeeId: 6,
-      email: "arturo.lima@nubank.com.br",
+      email: "arturo.frias@nubank.com.br",
       password: "Nubank@123",
       role: "EMPLOYEE",
-      name: "Arturo Lima",
+      name: "Arturo Frias",
       chapter: "Controllership",
       hireDate: "2022-11-12",
     },
@@ -161,6 +172,7 @@ function buildDefaultDb() {
     },
     users,
     backup_by_employee_id: backupByEmployeeId,
+    hour_bank_by_employee_id: buildDefaultHourBankMap(users),
     balances: [
       { employee_id: 1, year: currentYear, total_days: 30, used_days: 5 },
       { employee_id: 2, year: currentYear, total_days: 30, used_days: 8 },
@@ -189,7 +201,7 @@ function buildDefaultDb() {
       {
         id: 2,
         employee_id: 6,
-        employee_name: "Arturo Lima",
+        employee_name: "Arturo Frias",
         start_date: `${currentYear}-09-05`,
         end_date: `${currentYear}-09-10`,
         requested_days: 6,
@@ -208,6 +220,9 @@ function buildDefaultDb() {
         requested_days: 1,
         status: "APPROVED",
         event_type: "DAY_OFF",
+        day_off_duration: DAY_OFF_DURATION.FULL_DAY,
+        day_off_hours: 8,
+        consumes_hour_bank: false,
         justification: "Personal appointment",
         created_at: nowIso(),
         updated_at: nowIso(),
@@ -229,9 +244,9 @@ function buildDefaultDb() {
         id: 2,
         vacation_request_id: 2,
         employee_id: 6,
-        employee_name: "Arturo Lima",
+        employee_name: "Arturo Frias",
         actor_user_id: 6,
-        actor_name: "Arturo Lima",
+        actor_name: "Arturo Frias",
         action: "CREATED",
         details: "Type=Vacation; Period saved in calendar",
         action_at: nowIso(),
@@ -262,7 +277,9 @@ function isValidDbShape(value) {
       Array.isArray(value.vacations) &&
       Array.isArray(value.auditLogs) &&
       value.backup_by_employee_id &&
-      typeof value.backup_by_employee_id === "object"
+      typeof value.backup_by_employee_id === "object" &&
+      value.hour_bank_by_employee_id &&
+      typeof value.hour_bank_by_employee_id === "object"
   );
 }
 
@@ -306,6 +323,36 @@ function normalizeBackupMap(rawBackupMap, users) {
   return normalized;
 }
 
+function normalizeHourBankMap(rawHourBankMap, users) {
+  const defaults = buildDefaultHourBankMap(users);
+  const normalized = { ...defaults };
+
+  if (!rawHourBankMap || typeof rawHourBankMap !== "object") {
+    return normalized;
+  }
+
+  for (const user of users) {
+    const employeeId = String(user.employeeId);
+    const rawRecord = rawHourBankMap[employeeId];
+    if (!rawRecord || typeof rawRecord !== "object") {
+      continue;
+    }
+
+    const parsedTotal = Number(rawRecord.total_hours);
+    const parsedUsed = Number(rawRecord.used_hours);
+    const totalHours = Number.isFinite(parsedTotal) && parsedTotal >= 0 ? parsedTotal : 0;
+    const usedHoursRaw = Number.isFinite(parsedUsed) && parsedUsed >= 0 ? parsedUsed : 0;
+    const usedHours = Math.min(usedHoursRaw, totalHours);
+
+    normalized[employeeId] = {
+      total_hours: totalHours,
+      used_hours: usedHours,
+    };
+  }
+
+  return normalized;
+}
+
 function migrateDbShape(rawDb) {
   const defaults = buildDefaultDb();
   const source = rawDb || {};
@@ -325,6 +372,7 @@ function migrateDbShape(rawDb) {
     },
     users,
     backup_by_employee_id: normalizeBackupMap(source.backup_by_employee_id, users),
+    hour_bank_by_employee_id: normalizeHourBankMap(source.hour_bank_by_employee_id, users),
     balances: Array.isArray(source.balances) ? source.balances : defaults.balances,
     vacations: Array.isArray(source.vacations) ? source.vacations : defaults.vacations,
     auditLogs: Array.isArray(source.auditLogs) ? source.auditLogs : defaults.auditLogs,
@@ -502,6 +550,25 @@ function withRemaining(balance) {
   };
 }
 
+function getOrCreateHourBank(db, employeeId) {
+  db.hour_bank_by_employee_id = normalizeHourBankMap(db.hour_bank_by_employee_id, db.users);
+  const employeeKey = String(employeeId);
+  if (!db.hour_bank_by_employee_id[employeeKey]) {
+    db.hour_bank_by_employee_id[employeeKey] = {
+      total_hours: 0,
+      used_hours: 0,
+    };
+  }
+  return db.hour_bank_by_employee_id[employeeKey];
+}
+
+function withHourBankAvailable(hourBank) {
+  return {
+    ...hourBank,
+    available_hours: Number(hourBank.total_hours) - Number(hourBank.used_hours),
+  };
+}
+
 function parseFilterDate(value) {
   if (!value) return null;
   const date = parseDate(value);
@@ -572,6 +639,11 @@ function ensureUserForCorporateEmail(db, email) {
   });
   db.backup_by_employee_id = normalizeBackupMap(db.backup_by_employee_id, db.users);
   db.backup_by_employee_id[String(newEmployeeId)] = null;
+  db.hour_bank_by_employee_id = normalizeHourBankMap(db.hour_bank_by_employee_id, db.users);
+  db.hour_bank_by_employee_id[String(newEmployeeId)] = {
+    total_hours: 0,
+    used_hours: 0,
+  };
 
   return user;
 }
@@ -756,6 +828,43 @@ export async function mockUpdateEmployeeBalance(employeeId, year, payload) {
   return withRemaining(balance);
 }
 
+export async function mockGetEmployeeHourBank(employeeId) {
+  const actor = getCurrentUserOrThrow();
+  if (!canAccessEmployee(actor, employeeId)) {
+    throw mockError(403, "No permission to view this hour bank.");
+  }
+
+  const db = await readDb();
+  const hourBank = getOrCreateHourBank(db, employeeId);
+  await writeDb(db);
+  return withHourBankAvailable(hourBank);
+}
+
+export async function mockUpdateEmployeeHourBank(employeeId, payload) {
+  const actor = getCurrentUserOrThrow();
+  if (!canAccessEmployee(actor, employeeId)) {
+    throw mockError(403, "No permission to adjust this hour bank.");
+  }
+
+  const totalHours = Number(payload?.total_hours);
+  if (Number.isNaN(totalHours) || totalHours < 0) {
+    throw mockError(400, "Provide a non-negative numeric total_hours.");
+  }
+
+  const db = await readDb();
+  const hourBank = getOrCreateHourBank(db, employeeId);
+  if (totalHours < Number(hourBank.used_hours)) {
+    throw mockError(
+      400,
+      "Total hours cannot be lower than hours already consumed by day off events."
+    );
+  }
+
+  hourBank.total_hours = totalHours;
+  await writeDb(db);
+  return withHourBankAvailable(hourBank);
+}
+
 export async function mockGetEmployeeVacations(employeeId, status) {
   const actor = getCurrentUserOrThrow();
   if (!canAccessEmployee(actor, employeeId)) {
@@ -848,12 +957,21 @@ export async function mockCreateVacation(payload) {
   const justification = payload?.justification || null;
   const rawType = payload?.event_type || payload?.eventType || "VACATION";
   const eventType = String(rawType).toUpperCase();
+  const rawDayOffDuration =
+    payload?.day_off_duration || payload?.dayOffDuration || DAY_OFF_DURATION.FULL_DAY;
+  const dayOffDuration = String(rawDayOffDuration).toUpperCase();
 
   if (!startDate || !endDate) {
     throw mockError(400, "Required fields: start_date and end_date.");
   }
   if (!["VACATION", "DAY_OFF"].includes(eventType)) {
     throw mockError(400, "Invalid event type.");
+  }
+  if (
+    eventType === "DAY_OFF" &&
+    ![DAY_OFF_DURATION.FULL_DAY, DAY_OFF_DURATION.HALF_DAY].includes(dayOffDuration)
+  ) {
+    throw mockError(400, "Invalid day off duration.");
   }
 
   const start = parseDate(startDate);
@@ -865,7 +983,16 @@ export async function mockCreateVacation(payload) {
   const db = await readDb();
   const requestedDays = countCalendarDays(startDate, endDate);
   const employee = db.users.find((item) => Number(item.employeeId) === employeeId);
+  if (!employee) {
+    throw mockError(404, "Employee not found.");
+  }
   db.backup_by_employee_id = normalizeBackupMap(db.backup_by_employee_id, db.users);
+  db.hour_bank_by_employee_id = normalizeHourBankMap(db.hour_bank_by_employee_id, db.users);
+
+  const dayOffHoursPerDay = getDayOffHoursPerDay(dayOffDuration);
+  const dayOffRequestedHours = requestedDays * dayOffHoursPerDay;
+  const isUnlimitedDayOff = isUnlimitedDayOffEmail(employee.email);
+  const consumesHourBank = eventType === "DAY_OFF" && !isUnlimitedDayOff;
 
   if (eventType === "VACATION") {
     const backupEmployeeId = db.backup_by_employee_id[String(employeeId)];
@@ -894,6 +1021,15 @@ export async function mockCreateVacation(payload) {
     }
   }
 
+  if (consumesHourBank) {
+    const hourBank = getOrCreateHourBank(db, employeeId);
+    const availableHours = Number(hourBank.total_hours) - Number(hourBank.used_hours);
+    if (availableHours < dayOffRequestedHours) {
+      throw mockError(409, "Insufficient hour-bank balance for this day off.");
+    }
+    hourBank.used_hours = Number(hourBank.used_hours) + dayOffRequestedHours;
+  }
+
   const createdAt = nowIso();
   const vacation = {
     id: db.counters.vacationId++,
@@ -904,6 +1040,9 @@ export async function mockCreateVacation(payload) {
     requested_days: requestedDays,
     status: "APPROVED",
     event_type: eventType,
+    day_off_duration: eventType === "DAY_OFF" ? dayOffDuration : null,
+    day_off_hours: eventType === "DAY_OFF" ? dayOffRequestedHours : null,
+    consumes_hour_bank: eventType === "DAY_OFF" ? consumesHourBank : null,
     justification,
     created_at: createdAt,
     updated_at: createdAt,
@@ -924,7 +1063,10 @@ export async function mockCreateVacation(payload) {
     actor_user_id: actor.userId,
     actor_name: actor.name,
     action: "CREATED",
-    details: `Type=${eventType === "DAY_OFF" ? "Day Off" : "Vacation"}; Period ${startDate} to ${endDate}; calendar_days=${requestedDays}`,
+    details:
+      eventType === "DAY_OFF"
+        ? `Type=Day Off; Duration=${dayOffDuration === DAY_OFF_DURATION.HALF_DAY ? "Half day (4h)" : "Full day (8h)"}; Period ${startDate} to ${endDate}; calendar_days=${requestedDays}; consumed_hours=${consumesHourBank ? dayOffRequestedHours : 0}`
+        : `Type=Vacation; Period ${startDate} to ${endDate}; calendar_days=${requestedDays}`,
     action_at: nowIso(),
   });
 
@@ -962,6 +1104,12 @@ export async function mockRemoveVacation(vacationId) {
     }
   }
 
+  if ((vacation.event_type || "VACATION") === "DAY_OFF" && vacation.consumes_hour_bank) {
+    const consumedHours = Number(vacation.day_off_hours || 0);
+    const hourBank = getOrCreateHourBank(db, vacation.employee_id);
+    hourBank.used_hours = Math.max(0, Number(hourBank.used_hours) - consumedHours);
+  }
+
   vacation.status = "CANCELLED";
   vacation.updated_at = nowIso();
 
@@ -973,7 +1121,10 @@ export async function mockRemoveVacation(vacationId) {
     actor_user_id: actor.userId,
     actor_name: actor.name,
     action: "DELETED",
-    details: `Type=${(vacation.event_type || "VACATION") === "DAY_OFF" ? "Day Off" : "Vacation"}; Period ${vacation.start_date} to ${vacation.end_date}; calendar_days=${vacation.requested_days}`,
+    details:
+      (vacation.event_type || "VACATION") === "DAY_OFF"
+        ? `Type=Day Off; Duration=${vacation.day_off_duration === DAY_OFF_DURATION.HALF_DAY ? "Half day (4h)" : "Full day (8h)"}; Period ${vacation.start_date} to ${vacation.end_date}; calendar_days=${vacation.requested_days}; consumed_hours=${vacation.consumes_hour_bank ? Number(vacation.day_off_hours || 0) : 0}`
+        : `Type=Vacation; Period ${vacation.start_date} to ${vacation.end_date}; calendar_days=${vacation.requested_days}`,
     action_at: nowIso(),
   });
 
