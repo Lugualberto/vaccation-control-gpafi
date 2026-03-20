@@ -21,7 +21,7 @@ const ADMIN_EMAILS = new Set([
   "luana.gualberto@nubank.com.br",
   "camila.palomo@nubank.com.br",
 ]);
-const HISTORY_HIDDEN_EMAILS = new Set([
+const ARCHIVED_USER_EMAILS = new Set([
   "bianca.alves@nubank.com.br",
   "rafael.oliveira@nubank.com.br",
 ]);
@@ -59,10 +59,14 @@ function countCalendarDays(startDateString, endDateString) {
   return Math.floor((end - start) / millisecondsPerDay) + 1;
 }
 
+function getVisibleUsers(users) {
+  return users.filter((user) => !ARCHIVED_USER_EMAILS.has(normalizeEmail(user.email)));
+}
+
 function getHistoryHiddenEmployeeIdSet(users) {
   const hiddenIds = new Set();
   for (const user of users) {
-    if (HISTORY_HIDDEN_EMAILS.has(normalizeEmail(user.email))) {
+    if (ARCHIVED_USER_EMAILS.has(normalizeEmail(user.email))) {
       hiddenIds.add(Number(user.employeeId));
     }
   }
@@ -296,6 +300,9 @@ function buildDefaultBackupMap(users) {
 function normalizeBackupMap(rawBackupMap, users) {
   const defaults = buildDefaultBackupMap(users);
   const normalized = { ...defaults };
+  const visibleEmployeeIds = new Set(
+    getVisibleUsers(users).map((candidate) => Number(candidate.employeeId))
+  );
 
   if (!rawBackupMap || typeof rawBackupMap !== "object") {
     return normalized;
@@ -314,7 +321,7 @@ function normalizeBackupMap(rawBackupMap, users) {
     }
 
     const parsedBackupId = Number(backupEmployeeId);
-    const backupExists = users.some((candidate) => Number(candidate.employeeId) === parsedBackupId);
+    const backupExists = visibleEmployeeIds.has(parsedBackupId);
     normalized[employeeId] = backupExists ? parsedBackupId : null;
   }
 
@@ -667,9 +674,10 @@ export async function mockGetCurrentUser() {
 export async function mockGetEmployees() {
   const actor = getCurrentUserOrThrow();
   const db = await readDb();
+  const visibleUsers = getVisibleUsers(db.users);
 
   if (actor.role !== "ADMIN") {
-    const own = db.users.find((item) => Number(item.employeeId) === Number(actor.employeeId));
+    const own = visibleUsers.find((item) => Number(item.employeeId) === Number(actor.employeeId));
     return own
       ? [
           {
@@ -683,7 +691,7 @@ export async function mockGetEmployees() {
       : [];
   }
 
-  return db.users.map((user) => ({
+  return visibleUsers.map((user) => ({
     id: user.employeeId,
     name: user.name,
     email: user.email,
@@ -693,11 +701,16 @@ export async function mockGetEmployees() {
 }
 
 function formatBackupRow(employee, backupEmployee) {
+  const visibleBackupEmployee = backupEmployee
+    ? ARCHIVED_USER_EMAILS.has(normalizeEmail(backupEmployee.email))
+      ? null
+      : backupEmployee
+    : null;
   return {
     employee_id: employee.employeeId,
     employee_name: employee.name,
-    backup_employee_id: backupEmployee?.employeeId || null,
-    backup_employee_name: backupEmployee?.name || null,
+    backup_employee_id: visibleBackupEmployee?.employeeId || null,
+    backup_employee_name: visibleBackupEmployee?.name || null,
   };
 }
 
@@ -705,9 +718,10 @@ export async function mockListBackupAssignments() {
   const actor = getCurrentUserOrThrow();
   const db = await readDb();
   const backupMap = normalizeBackupMap(db.backup_by_employee_id, db.users);
+  const visibleUsers = getVisibleUsers(db.users);
 
   if (actor.role !== "ADMIN") {
-    const own = db.users.find((item) => Number(item.employeeId) === Number(actor.employeeId));
+    const own = visibleUsers.find((item) => Number(item.employeeId) === Number(actor.employeeId));
     if (!own) return [];
     const backupId = backupMap[String(own.employeeId)];
     const backupEmployee = db.users.find(
@@ -716,7 +730,7 @@ export async function mockListBackupAssignments() {
     return [formatBackupRow(own, backupEmployee)];
   }
 
-  return db.users.map((employee) => {
+  return visibleUsers.map((employee) => {
     const backupId = backupMap[String(employee.employeeId)];
     const backupEmployee = db.users.find((item) => Number(item.employeeId) === Number(backupId));
     return formatBackupRow(employee, backupEmployee);

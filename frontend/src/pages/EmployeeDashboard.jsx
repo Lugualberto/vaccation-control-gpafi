@@ -139,7 +139,9 @@ export default function EmployeeDashboard() {
       });
       setEventsData(vacationsResult);
       setAuditLogs(auditResult);
-      const ownBackup = backupResult?.[0];
+      const ownBackup = backupResult?.find(
+        (row) => Number(row.employee_id) === Number(employeeId)
+      );
       setBackupInfo({
         hasConfiguredBackup: Boolean(ownBackup),
         backupFirstName: ownBackup?.backup_employee_name?.split(" ")?.[0]?.toLowerCase() || null,
