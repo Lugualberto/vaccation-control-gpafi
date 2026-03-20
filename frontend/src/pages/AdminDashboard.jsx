@@ -52,11 +52,13 @@ export default function AdminDashboard() {
   const [employees, setEmployees] = useState([]);
   const [approvedVacations, setApprovedVacations] = useState([]);
   const [allPeriods, setAllPeriods] = useState([]);
+  const [teamBalances, setTeamBalances] = useState([]);
   const [backupAssignments, setBackupAssignments] = useState([]);
   const [backupDrafts, setBackupDrafts] = useState({});
   const [auditLogs, setAuditLogs] = useState([]);
   const [loadingCalendar, setLoadingCalendar] = useState(false);
   const [loadingPeriods, setLoadingPeriods] = useState(false);
+  const [loadingTeamBalances, setLoadingTeamBalances] = useState(false);
   const [error, setError] = useState("");
   const [calendarView, setCalendarView] = useState("month");
   const [calendarDate, setCalendarDate] = useState(new Date());
@@ -167,6 +169,65 @@ export default function AdminDashboard() {
     }
   }, []);
 
+  const loadTeamBalances = useCallback(
+    async (sourceEmployees) => {
+      const employeesToLoad = Array.isArray(sourceEmployees) ? sourceEmployees : [];
+      if (!employeesToLoad.length) {
+        setTeamBalances([]);
+        return;
+      }
+
+      setLoadingTeamBalances(true);
+      try {
+        const rows = await Promise.all(
+          employeesToLoad.map(async (employee) => {
+            const employeeId = Number(employee.ID || employee.id);
+            const employeeName = employee.NAME || employee.name || "Employee";
+            const employeeEmail = employee.EMAIL || employee.email || "-";
+
+            try {
+              const [vacationBalance, hourBank] = await Promise.all([
+                getEmployeeBalance(employeeId, currentYear),
+                getEmployeeHourBank(employeeId),
+              ]);
+              return {
+                employeeId,
+                employeeName,
+                employeeEmail,
+                vacationTotal: vacationBalance.TOTAL_DAYS || vacationBalance.total_days,
+                vacationUsed: vacationBalance.USED_DAYS || vacationBalance.used_days,
+                vacationAvailable:
+                  vacationBalance.REMAINING_DAYS || vacationBalance.remaining_days,
+                hourTotal: hourBank.TOTAL_HOURS || hourBank.total_hours,
+                hourUsed: hourBank.USED_HOURS || hourBank.used_hours,
+                hourAvailable: hourBank.AVAILABLE_HOURS || hourBank.available_hours,
+              };
+            } catch {
+              return {
+                employeeId,
+                employeeName,
+                employeeEmail,
+                vacationTotal: "-",
+                vacationUsed: "-",
+                vacationAvailable: "-",
+                hourTotal: "-",
+                hourUsed: "-",
+                hourAvailable: "-",
+              };
+            }
+          })
+        );
+
+        setTeamBalances(rows.sort((a, b) => a.employeeName.localeCompare(b.employeeName)));
+      } catch {
+        setError("Failed to load team vacation/hour-bank overview.");
+      } finally {
+        setLoadingTeamBalances(false);
+      }
+    },
+    [currentYear]
+  );
+
   const loadBalanceSnapshot = useCallback(async (employeeId, year) => {
     if (!employeeId || !year) {
       return;
@@ -227,16 +288,30 @@ export default function AdminDashboard() {
   }, [loadEmployees, loadApprovedCalendar, loadAllPeriods, loadAuditLogs, loadBackupAssignments]);
 
   useEffect(() => {
+    if (!employees.length) {
+      setTeamBalances([]);
+      return;
+    }
+    loadTeamBalances(employees);
+  }, [employees, loadTeamBalances]);
+
+  useEffect(() => {
     const intervalId = window.setInterval(() => {
       loadApprovedCalendar(calendarFilters);
       loadAllPeriods(calendarFilters);
       loadAuditLogs(calendarFilters);
+      if (employees.length) {
+        loadTeamBalances(employees);
+      }
     }, 15000);
 
     const handleFocus = () => {
       loadApprovedCalendar(calendarFilters);
       loadAllPeriods(calendarFilters);
       loadAuditLogs(calendarFilters);
+      if (employees.length) {
+        loadTeamBalances(employees);
+      }
     };
 
     window.addEventListener("focus", handleFocus);
@@ -245,7 +320,7 @@ export default function AdminDashboard() {
       window.clearInterval(intervalId);
       window.removeEventListener("focus", handleFocus);
     };
-  }, [calendarFilters, loadApprovedCalendar, loadAllPeriods, loadAuditLogs]);
+  }, [calendarFilters, employees, loadApprovedCalendar, loadAllPeriods, loadAuditLogs, loadTeamBalances]);
 
   useEffect(() => {
     if (!employees.length) {
@@ -306,6 +381,7 @@ export default function AdminDashboard() {
       setBalanceMessage(
         `Balance updated. Available: ${updated.REMAINING_DAYS || updated.remaining_days} days.`
       );
+      await loadTeamBalances(employees);
     } catch (requestError) {
       const apiMessage = requestError?.response?.data?.message;
       setError(apiMessage || "Failed to adjust balance.");
@@ -333,6 +409,7 @@ export default function AdminDashboard() {
       setHourBankMessage(
         `Hour bank updated. Available: ${updated.AVAILABLE_HOURS || updated.available_hours}h.`
       );
+      await loadTeamBalances(employees);
     } catch (requestError) {
       const apiMessage = requestError?.response?.data?.message;
       setError(apiMessage || "Failed to adjust hour bank.");
@@ -383,6 +460,7 @@ export default function AdminDashboard() {
       ]);
       await loadBalanceSnapshot(balanceForm.employeeId, balanceForm.year);
       await loadHourBankSnapshot(hourBankForm.employeeId);
+      await loadTeamBalances(employees);
       setBalanceMessage("Period removed and balances refreshed.");
     } catch (requestError) {
       const apiMessage = requestError?.response?.data?.message;
@@ -406,6 +484,44 @@ export default function AdminDashboard() {
         ) : null}
         <p className="hint-text">Session: {user?.email || user?.EMAIL}</p>
         {error ? <p className="error-text">{error}</p> : null}
+      </div>
+
+      <div className="card">
+        <h3>Team vacation days and hour-bank balance ({currentYear})</h3>
+        {loadingTeamBalances ? <p>Loading team balances...</p> : null}
+        {!loadingTeamBalances && !teamBalances.length ? (
+          <p>No team balances available yet.</p>
+        ) : null}
+        {teamBalances.length > 0 ? (
+          <table className="requests-table">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Email</th>
+                <th>Vacation total</th>
+                <th>Vacation used</th>
+                <th>Vacation available</th>
+                <th>Hour bank total</th>
+                <th>Hour bank used</th>
+                <th>Hour bank available</th>
+              </tr>
+            </thead>
+            <tbody>
+              {teamBalances.map((item) => (
+                <tr key={`team-balance-${item.employeeId}`}>
+                  <td>{item.employeeName}</td>
+                  <td>{item.employeeEmail}</td>
+                  <td>{item.vacationTotal}</td>
+                  <td>{item.vacationUsed}</td>
+                  <td>{item.vacationAvailable}</td>
+                  <td>{item.hourTotal}</td>
+                  <td>{item.hourUsed}</td>
+                  <td>{item.hourAvailable}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : null}
       </div>
 
       <div className="card">

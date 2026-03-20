@@ -4,6 +4,7 @@ import {
   DAY_OFF_DURATION,
   getDayOffHoursPerDay,
   isUnlimitedDayOffEmail,
+  normalizeEmail,
 } from "../constants/dayOff";
 
 const MOCK_DB_KEY = "vacation_app_mock_db";
@@ -20,6 +21,11 @@ const ADMIN_EMAILS = new Set([
   "luana.gualberto@nubank.com.br",
   "camila.palomo@nubank.com.br",
 ]);
+const HISTORY_HIDDEN_EMAILS = new Set([
+  "bianca.alves@nubank.com.br",
+  "rafael.oliveira@nubank.com.br",
+]);
+const HISTORY_HIDDEN_NAMES = new Set(["bianca alves", "rafael oliveira"]);
 
 function mockError(status, message) {
   const error = new Error(message);
@@ -51,6 +57,22 @@ function countCalendarDays(startDateString, endDateString) {
 
   const millisecondsPerDay = 1000 * 60 * 60 * 24;
   return Math.floor((end - start) / millisecondsPerDay) + 1;
+}
+
+function getHistoryHiddenEmployeeIdSet(users) {
+  const hiddenIds = new Set();
+  for (const user of users) {
+    if (HISTORY_HIDDEN_EMAILS.has(normalizeEmail(user.email))) {
+      hiddenIds.add(Number(user.employeeId));
+    }
+  }
+  return hiddenIds;
+}
+
+function shouldHideHistoryRecord(record, hiddenEmployeeIds) {
+  const employeeId = Number(record?.employee_id);
+  const employeeName = String(record?.employee_name || "").trim().toLowerCase();
+  return hiddenEmployeeIds.has(employeeId) || HISTORY_HIDDEN_NAMES.has(employeeName);
 }
 
 function buildDefaultHourBankMap(users) {
@@ -186,19 +208,6 @@ function buildDefaultDb() {
     ],
     vacations: [
       {
-        id: 1,
-        employee_id: 3,
-        employee_name: "Bianca Alves",
-        start_date: `${currentYear}-08-12`,
-        end_date: `${currentYear}-08-16`,
-        requested_days: 5,
-        status: "APPROVED",
-        event_type: "VACATION",
-        justification: "School vacation",
-        created_at: nowIso(),
-        updated_at: nowIso(),
-      },
-      {
         id: 2,
         employee_id: 6,
         employee_name: "Arturo Frias",
@@ -229,17 +238,6 @@ function buildDefaultDb() {
       },
     ],
     auditLogs: [
-      {
-        id: 1,
-        vacation_request_id: 1,
-        employee_id: 3,
-        employee_name: "Bianca Alves",
-        actor_user_id: 3,
-        actor_name: "Bianca Alves",
-        action: "CREATED",
-        details: "Type=Vacation; Period saved in calendar",
-        action_at: nowIso(),
-      },
       {
         id: 2,
         vacation_request_id: 2,
@@ -357,6 +355,9 @@ function migrateDbShape(rawDb) {
   const defaults = buildDefaultDb();
   const source = rawDb || {};
   const users = Array.isArray(source.users) && source.users.length ? source.users : defaults.users;
+  const hiddenEmployeeIds = getHistoryHiddenEmployeeIdSet(users);
+  const baseVacations = Array.isArray(source.vacations) ? source.vacations : defaults.vacations;
+  const baseAuditLogs = Array.isArray(source.auditLogs) ? source.auditLogs : defaults.auditLogs;
 
   return {
     schemaVersion: DB_SCHEMA_VERSION,
@@ -374,8 +375,8 @@ function migrateDbShape(rawDb) {
     backup_by_employee_id: normalizeBackupMap(source.backup_by_employee_id, users),
     hour_bank_by_employee_id: normalizeHourBankMap(source.hour_bank_by_employee_id, users),
     balances: Array.isArray(source.balances) ? source.balances : defaults.balances,
-    vacations: Array.isArray(source.vacations) ? source.vacations : defaults.vacations,
-    auditLogs: Array.isArray(source.auditLogs) ? source.auditLogs : defaults.auditLogs,
+    vacations: baseVacations.filter((record) => !shouldHideHistoryRecord(record, hiddenEmployeeIds)),
+    auditLogs: baseAuditLogs.filter((record) => !shouldHideHistoryRecord(record, hiddenEmployeeIds)),
   };
 }
 
